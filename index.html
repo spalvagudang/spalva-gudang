@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Gudang Spalva PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+.header{background:#2c7be5;color:white;padding:15px;text-align:center;}
+.menu{display:flex;flex-wrap:wrap;}
+.menu button{flex:1;padding:10px;border:none;background:#eee;}
+.container{padding:10px;}
+.hidden{display:none;}
+button,input,select{width:100%;padding:10px;margin:5px 0;}
+table{width:100%;border-collapse:collapse;}
+th,td{border-bottom:1px solid #ddd;padding:6px;text-align:center;}
+#reader{max-width:300px;margin:auto;}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" style="padding:20px">
+<h2>Login Gudang</h2>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+<button onclick="doLogin()">Login</button>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+<div class="header">📦 Gudang Spalva PRO</div>
+
+<div class="menu">
+<button onclick="show('dash')">Dashboard</button>
+<button onclick="show('finder')">Finder</button>
+<button onclick="show('matrix')">Matrix</button>
+<button onclick="show('masuk')">Masuk</button>
+<button onclick="show('keluar')">Keluar</button>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+<div id="dash">
+<h3>Total SKU: <span id="totalItem"></span></h3>
+<h3>Total Stok: <span id="totalStok"></span></h3>
+<h3>Stok Menipis: <span id="stokMenipis"></span></h3>
+</div>
+
+<div id="finder" class="hidden">
+<select id="fKategori"></select>
+<select id="fProduk"></select>
+<select id="fWarna"></select>
+<select id="fSize"></select>
+<button onclick="renderFinder()">Cari</button>
+<table>
+<thead>
+<tr><th>Kategori</th><th>Produk</th><th>Warna</th><th>Size</th><th>Stok</th></tr>
+</thead>
+<tbody id="finderTable"></tbody>
+</table>
+</div>
+
+<div id="matrix" class="hidden">
+<select id="mKategori"></select>
+<select id="mProduk"></select>
+<select id="mWarna"></select>
+<button onclick="renderMatrix()">Cari</button>
+<table>
+<thead>
+<tr>
+<th>Kategori</th><th>Produk</th><th>Warna</th>
+<th>XS</th><th>S</th><th>M</th><th>L</th>
+<th>XL</th><th>XXL</th><th>3XL</th>
+</tr>
+</thead>
+<tbody id="matrixTable"></tbody>
+</table>
+</div>
+
+<div id="masuk" class="hidden">
+<h3>Barang Masuk</h3>
+<input type="number" id="qtyMasuk" value="1">
+<button onclick="scan('MASUK')">SCAN</button>
+<div id="reader"></div>
+</div>
+
+<div id="keluar" class="hidden">
+<h3>Barang Keluar</h3>
+<input type="number" id="qtyKeluar" value="1">
+<button onclick="scan('KELUAR')">SCAN</button>
+</div>
+
+</div>
+</div>
+
+<script>
+
+const API_URL="https://script.google.com/macros/s/AKfycbzvh2AQroMKsDhwCg2Y5IdIKwO1SBjOosZdHGB5BsONm3P-6rb_j5bJ3ruCWmgtLhtx/exec"
+
+let stockData=[]
+let qr=null
+
+// ================= LOGIN =================
+async function doLogin(){
+
+let user = username.value.trim()
+let pass = password.value.trim()
+
+let formData = new FormData()
+formData.append("action","login")
+formData.append("username",user)
+formData.append("password",pass)
+
+try{
+
+let res = await fetch(API_URL,{
+  method:"POST",
+  body:formData
+})
+
+let text = await res.text()
+let data = JSON.parse(text)
+
+if(data.status==="success"){
+  localStorage.setItem("user",JSON.stringify(data))
+  alert("Login berhasil")
+  checkLogin()
+}else{
+  alert(data.message || "Login gagal")
+}
+
+}catch(err){
+  console.error(err)
+  alert("API ERROR: "+err.message)
+}
+
+}
+
+function logout(){
+localStorage.removeItem("user")
+location.reload()
+}
+
+function checkLogin(){
+let user=localStorage.getItem("user")
+
+if(user){
+loginPage.style.display="none"
+app.style.display="block"
+loadDashboard()
+}else{
+loginPage.style.display="block"
+app.style.display="none"
+}
+}
+
+window.onload=checkLogin
+
+// ================= DASHBOARD =================
+async function loadDashboard(){
+
+let res=await fetch(API_URL)
+let data=await res.json()
+
+stockData=data
+
+totalItem.innerText=data.length
+totalStok.innerText=data.reduce((a,b)=>a+Number(b.stok||0),0)
+stokMenipis.innerText=data.filter(x=>x.stok<=2).length
+
+fill("fKategori","kategori")
+fill("fProduk","produk")
+fill("fWarna","warna")
+fill("fSize","size")
+
+fill("mKategori","kategori")
+fill("mProduk","produk")
+fill("mWarna","warna")
+}
+
+// ================= DROPDOWN =================
+function fill(id,field){
+let el=document.getElementById(id)
+let uniq=[...new Set(stockData.map(x=>x[field]).filter(Boolean))]
+el.innerHTML="<option value=''>Semua</option>"
+uniq.forEach(v=>el.innerHTML+=`<option>${v}</option>`)
+}
+
+// ================= FINDER =================
+function renderFinder(){
+let rows=stockData.filter(d=>
+(!fKategori.value||d.kategori==fKategori.value)&&
+(!fProduk.value||d.produk==fProduk.value)&&
+(!fWarna.value||d.warna==fWarna.value)&&
+(!fSize.value||d.size==fSize.value)
+)
+
+finderTable.innerHTML=rows.map(d=>`
+<tr>
+<td>${d.kategori}</td>
+<td>${d.produk}</td>
+<td>${d.warna}</td>
+<td>${d.size}</td>
+<td>${d.stok}</td>
+</tr>`).join("")
+}
+
+// ================= MATRIX =================
+function renderMatrix(){
+
+let filtered=stockData.filter(d=>
+(!mKategori.value||d.kategori==mKategori.value)&&
+(!mProduk.value||d.produk==mProduk.value)&&
+(!mWarna.value||d.warna==mWarna.value)
+)
+
+let g={}
+
+filtered.forEach(d=>{
+let key=d.produk+"|"+d.warna
+
+if(!g[key]){
+g[key]={kategori:d.kategori,produk:d.produk,warna:d.warna,XS:0,S:0,M:0,L:0,XL:0,XXL:0,"3XL":0}
+}
+
+g[key][d.size]=d.stok
+})
+
+matrixTable.innerHTML=Object.values(g).map(r=>`
+<tr>
+<td>${r.kategori}</td>
+<td>${r.produk}</td>
+<td>${r.warna}</td>
+<td>${r.XS}</td><td>${r.S}</td><td>${r.M}</td>
+<td>${r.L}</td><td>${r.XL}</td><td>${r.XXL}</td><td>${r["3XL"]}</td>
+</tr>`).join("")
+}
+
+// ================= SCAN =================
+async function scan(mode){
+
+if(qr){try{await qr.stop()}catch(e){}}
+qr=new Html5Qrcode("reader")
+
+qr.start({facingMode:"environment"},{fps:10,qrbox:250},async msg=>{
+
+let user=JSON.parse(localStorage.getItem("user"))
+if(!user){alert("Login dulu");return}
+
+let sku=msg.trim()
+let item=stockData.find(x=>x.sku==sku)
+if(!item){alert("SKU tidak ditemukan");return}
+
+let stok=Number(item.stok||0)
+let qty=mode=="MASUK"?Number(qtyMasuk.value):Number(qtyKeluar.value)
+
+if(mode=="KELUAR" && stok<qty){
+alert("Stok tidak cukup")
+return
+}
+
+let formData = new FormData()
+formData.append("sku",sku)
+formData.append("jenis",mode)
+formData.append("jumlah",qty)
+formData.append("admin",user.nama)
+
+let res=await fetch(API_URL,{
+method:"POST",
+body:formData
+})
+
+let text=await res.text()
+
+if(text=="OK"){
+loadDashboard()
+alert("SUCCESS")
+}else{
+alert(text)
+}
+
+})
+}
+
+// ================= NAV =================
+function show(id){
+if(qr){qr.stop().catch(()=>{})}
+["dash","finder","matrix","masuk","keluar"].forEach(x=>document.getElementById(x).classList.add("hidden"))
+document.getElementById(id).classList.remove("hidden")
+}
+
+</script>
+
+</body>
+</html>
