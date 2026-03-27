@@ -1,893 +1,480 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Gudang Spalva — WebApp</title>
-
-  <!-- QR lib (external JS is fine; images are avoided per your original approach) -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <style>
-    :root{
-      --bg:#f2f2f2;
-      --ink:#0f0f10;
-      --muted:#6b7280;
-      --panel:#ffffff;
-      --line:#e7e7ea;
-      --shadow:0 10px 30px rgba(17,17,17,.08);
-      --radius:14px;
-
-      --brand:#111;
-      --ok:#00b894;
-      --bad:#d63031;
-      --warn:#f39c12;
-
-      --pad:15px;
-    }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--ink);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-
-    /* PAGES */
-    .page{ display:none; padding:var(--pad); padding-bottom:84px; }
-    .page.active{ display:block; }
-
-    /* HEADER */
-    .header{
-      position:sticky;
-      top:0;
-      background:var(--brand);
-      color:#fff;
-      padding:12px 15px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      z-index:999;
-      box-shadow:0 10px 20px rgba(0,0,0,.18);
-    }
-    .header-title{ font-weight:800; font-size:15px; letter-spacing:.2px; }
-    .header-info{ text-align:right; font-size:11px; line-height:1.3; opacity:.95; }
-    .logout-btn{
-      margin-top:6px;
-      padding:6px 9px;
-      font-size:10px;
-      background:transparent;
-      border:1px solid rgba(255,255,255,.75);
-      border-radius:10px;
-      color:#fff;
-    }
-    .logout-btn:active{ transform:scale(.98); }
-
-    /* CONTROLS */
-    button{
-      width:100%;
-      padding:14px;
-      margin:8px 0;
-      border:none;
-      border-radius:12px;
-      font-size:15px;
-      font-weight:800;
-      background:var(--brand);
-      color:#fff;
-      transition:transform .12s ease, filter .12s ease;
-      cursor:pointer;
-      user-select:none;
-    }
-    button:active{ transform:scale(0.98); }
-    button[disabled]{ opacity:.6; cursor:not-allowed; }
-    button.secondary{
-      background:#fff;
-      color:var(--ink);
-      border:1px solid var(--line);
-      box-shadow:none;
-      font-weight:800;
-    }
-    button.secondary:active{ transform:scale(.98); }
-
-    input,select{
-      width:100%;
-      padding:14px;
-      margin:6px 0;
-      border-radius:12px;
-      border:1px solid var(--line);
-      font-size:15px;
-      background:#fff;
-      outline:none;
-    }
-    input:focus,select:focus{
-      border-color:rgba(17,17,17,.45);
-      box-shadow:0 0 0 3px rgba(17,17,17,.10);
-    }
-
-    .card{
-      background:var(--panel);
-      padding:15px;
-      margin:10px 0;
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      font-size:14px;
-      line-height:1.6;
-      border:1px solid rgba(0,0,0,.04);
-    }
-
-    .status{
-      border-left:6px solid transparent;
-      padding-left:12px;
-    }
-    .status.red{ background:#ffe5e5; border-left-color:#ff4d4d; }
-    .status.green{ background:#e5ffe5; border-left-color:var(--ok); }
-    .status.yellow{ background:#fff1db; border-left-color:var(--warn); }
-
-    /* MENU */
-    #menu{
-      display:none;
-      gap:8px;
-      padding:10px;
-      background:rgba(255,255,255,.92);
-      border-top:1px solid var(--line);
-      position:fixed;
-      left:0;
-      right:0;
-      bottom:0;
-      z-index:998;
-      backdrop-filter: blur(10px);
-    }
-    #menu button{
-      flex:1;
-      font-size:12px;
-      padding:11px 10px;
-      border-radius:12px;
-      margin:0;
-    }
-
-    /* TABLE */
-    table{
-      width:100%;
-      border-collapse:collapse;
-      background:#fff;
-      border-radius:12px;
-      overflow:hidden;
-      box-shadow:var(--shadow);
-      border:1px solid rgba(0,0,0,.04);
-    }
-    td,th{
-      padding:10px;
-      border:1px solid #eee;
-      text-align:center;
-      font-size:14px;
-    }
-    th{
-      background:var(--brand);
-      color:#fff;
-      border-color:rgba(255,255,255,.08);
-    }
-
-    /* SCAN */
-    .scan-in{ background:var(--ok) !important; }
-    .scan-out{ background:var(--bad) !important; }
-
-    #reader{
-      width:100%;
-      min-height:240px;
-      border-radius:16px;
-      overflow:hidden;
-      border:1px solid var(--line);
-      background:
-        radial-gradient(1200px 500px at 20% 0%, rgba(0,184,148,.08), transparent 60%),
-        radial-gradient(900px 500px at 90% 20%, rgba(214,48,49,.10), transparent 55%),
-        linear-gradient(#fff, #fff);
-      box-shadow:var(--shadow);
-      margin-top:10px;
-    }
-
-    .row{
-      display:flex;
-      gap:10px;
-    }
-    .row > *{ flex:1; }
-
-    .muted{ color:var(--muted); font-size:12px; }
-    .title{
-      margin:14px 0 8px;
-      font-size:22px;
-      letter-spacing:.2px;
-    }
-    .subtitle{
-      margin:0 0 10px;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.4;
-    }
-
-    .toast{
-      position:fixed;
-      left:12px;
-      right:12px;
-      top:12px;
-      z-index:2000;
-      display:none;
-    }
-    .toast.show{ display:block; }
-    .toast .card{
-      margin:0;
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-      padding:12px 12px;
-    }
-    .dot{
-      width:10px;height:10px;border-radius:999px; margin-top:5px;
-      background:var(--brand);
-      box-shadow:0 0 0 4px rgba(17,17,17,.08);
-      flex:0 0 auto;
-    }
-    .dot.ok{ background:var(--ok); box-shadow:0 0 0 4px rgba(0,184,148,.12); }
-    .dot.bad{ background:var(--bad); box-shadow:0 0 0 4px rgba(214,48,49,.12); }
-    .dot.warn{ background:var(--warn); box-shadow:0 0 0 4px rgba(243,156,18,.14); }
-
-    @media (min-width: 860px){
-      body{ display:flex; justify-content:center; }
-      main{ width:min(860px, 100%); }
-      #menu{ left:50%; right:auto; transform:translateX(-50%); width:min(860px, 100%); border-radius:18px 18px 0 0; }
-      .page{ padding-bottom:92px; }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gudang Spalva - Dashboard & Print Label</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 16px; background: #f6f7fb; color: #111; }
+  h1, h2 { margin-bottom: 12px; }
+  label { display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; }
+  select, input[type=number], button, input[type=text] {
+    width: 100%; padding: 8px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;
+  }
+  button { margin-top: 16px; background-color: #111; color: white; border: none; cursor: pointer; }
+  button:hover { background-color: #333; }
+  #hasil, #logscan { margin-top: 20px; background: #fff; padding: 10px; border-radius: 8px; border: 1px dashed #ccc; min-height: 150px; }
+  .label {
+    width: 50mm; height: 30mm; padding: 4mm; box-sizing: border-box; border: 1px solid #ddd; border-radius: 6px;
+    display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; background: white; margin-bottom: 10px;
+  }
+  .label .title { font-weight: 700; margin-bottom: 2px; }
+  .label .sub { font-size: 11px; color: #666; line-height: 1.2; }
+  .barcode { width: 100%; height: 18mm; object-fit: contain; margin-top: 6px; }
+  .qrcode { width: 30mm; height: 30mm; object-fit: contain; margin-top: 4px; }
+  nav { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+  nav button { flex: 1 1 120px; margin-bottom: 8px; }
+  #scanResult { margin-top: 10px; background: #fffbdd; padding: 10px; border-radius: 6px; min-height: 50px; }
+  @media print {
+    body * { visibility: hidden; }
+    #hasil, #hasil * { visibility: visible; }
+    #hasil { position: absolute; left: 0; top: 0; }
+    .label { page-break-inside: avoid; }
+  }
+</style>
 </head>
-
 <body>
-<main>
 
-  <!-- TOAST -->
-  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true">
-    <div class="card">
-      <div id="toastDot" class="dot"></div>
-      <div>
-        <div id="toastTitle" style="font-weight:900; font-size:13px; margin-bottom:2px;">Info</div>
-        <div id="toastMsg" class="muted">...</div>
-      </div>
-    </div>
-  </div>
+<h1>Gudang Spalva</h1>
 
-  <!-- LOGIN -->
-  <section id="loginPage" class="page active" aria-label="Login">
-    <div class="header">
-      <div class="header-title">Gudang Spalva</div>
-      <div class="header-info">
-        <div class="muted" style="color:rgba(255,255,255,.82)">Web Gudang</div>
-      </div>
-    </div>
+<div id="loginSection">
+  <h2>Login</h2>
+  <label>Username</label>
+  <input type="text" id="username" autocomplete="username" />
+  <label>Password</label>
+  <input type="password" id="password" autocomplete="current-password" />
+  <button id="loginBtn">Login</button>
+  <div id="loginMsg" style="color:red; margin-top:8px;"></div>
+</div>
 
-    <h1 class="title">Login</h1>
-    <p class="subtitle">Masuk untuk akses dashboard, finder, matrix stok, dan scan barang.</p>
-
-    <label class="muted" for="username">Username</label>
-    <input id="username" autocomplete="username" placeholder="Masukkan username" />
-
-    <label class="muted" for="password">Password</label>
-    <input id="password" type="password" autocomplete="current-password" placeholder="Masukkan password" />
-
-    <button id="loginBtn" type="button">LOGIN</button>
-    <div class="muted" id="loginHint" style="margin-top:6px;"></div>
-  </section>
-
-  <!-- MENU -->
-  <nav id="menu" aria-label="Menu utama">
-    <button type="button" data-target="dashboard">Dashboard</button>
-    <button type="button" data-target="finder">Finder</button>
-    <button type="button" data-target="matrix">Matrix</button>
-    <button type="button" data-target="scan">Scan</button>
+<div id="appSection" style="display:none;">
+  <nav>
+    <button id="navDashboard">Dashboard</button>
+    <button id="navFinder">Finder</button>
+    <button id="navMatrix">Matrix</button>
+    <button id="navScan">Scan</button>
+    <button id="navPrint">Print Label</button>
+    <button id="logoutBtn" style="background:#b33;">Logout</button>
   </nav>
 
-  <!-- DASHBOARD -->
-  <section id="dashboard" class="page" aria-label="Dashboard">
-    <div class="header">
-      <div class="header-title">Dashboard</div>
-      <div class="header-info">
-        <div id="headerUser"></div>
-        <div id="headerTime"></div>
-        <button type="button" onclick="logout()" class="logout-btn">Logout</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="font-weight:900; margin-bottom:2px;">Aktivitas Terakhir</div>
-      <div class="muted">Riwayat scan/keluar masuk terbaru.</div>
-    </div>
-
-    <div id="history"></div>
+  <section id="dashboardSection" style="display:none;">
+    <h2>Dashboard</h2>
+    <div id="dashboardContent">Loading...</div>
+    <h3>Aktivitas Terakhir</h3>
+    <div id="logscan"></div>
   </section>
 
-  <!-- FINDER -->
-  <section id="finder" class="page" aria-label="Finder stok">
-    <div class="header"><div class="header-title">Finder Stok</div></div>
-
-    <div class="card">
-      <div style="font-weight:900; margin-bottom:6px;">Filter</div>
-      <div class="muted" style="margin-bottom:10px;">Pilih kategori → produk → warna → size, lalu cari.</div>
-
-      <select id="f_kategori" aria-label="Kategori"></select>
-      <select id="f_produk" aria-label="Produk"></select>
-      <select id="f_warna" aria-label="Warna"></select>
-      <select id="f_size" aria-label="Size"></select>
-
-      <button id="finderBtn" type="button">Cari</button>
-    </div>
-
+  <section id="finderSection" style="display:none;">
+    <h2>Finder</h2>
+    <label>Kategori</label><select id="finderKategori"></select>
+    <label>Produk</label><select id="finderProduk"></select>
+    <label>Warna</label><select id="finderWarna"></select>
+    <label>Size</label><select id="finderSize"></select>
+    <button id="finderSearchBtn">Cari</button>
     <div id="finderResult"></div>
   </section>
 
-  <!-- MATRIX -->
-  <section id="matrix" class="page" aria-label="Matrix stok">
-    <div class="header"><div class="header-title">Matrix Stok</div></div>
-
-    <div class="card">
-      <div style="font-weight:900; margin-bottom:6px;">Parameter</div>
-      <div class="muted" style="margin-bottom:10px;">Tampilkan stok per size berdasarkan kategori/produk/warna.</div>
-
-      <select id="m_kategori" aria-label="Kategori"></select>
-      <select id="m_produk" aria-label="Produk"></select>
-      <select id="m_warna" aria-label="Warna"></select>
-
-      <button id="matrixBtn" type="button">Tampilkan</button>
-    </div>
-
-    <div id="matrixResult"></div>
+  <section id="matrixSection" style="display:none;">
+    <h2>Matrix</h2>
+    <button id="matrixLoadBtn">Load Matrix</button>
+    <pre id="matrixResult"></pre>
   </section>
 
-  <!-- SCAN -->
-  <section id="scan" class="page" aria-label="Scan barang">
-    <div class="header"><div class="header-title">Scan Barang</div></div>
-
-    <div class="card">
-      <div style="font-weight:900; margin-bottom:6px;">Mode Scan</div>
-      <div class="muted">Pilih <b>Masuk</b> untuk barang masuk, atau <b>Keluar</b> untuk barang keluar. Scanner otomatis berhenti setelah berhasil.</div>
-
-      <div class="row" style="margin-top:8px;">
-        <button id="scanInBtn" type="button" style="background:var(--ok)">SCAN MASUK</button>
-        <button id="scanOutBtn" type="button" style="background:var(--bad)">SCAN KELUAR</button>
-      </div>
-
-      <div class="row" style="margin-top:8px;">
-        <button id="stopScanBtn" class="secondary" type="button" disabled>Stop Scan</button>
-        <button id="clearResultBtn" class="secondary" type="button">Bersihkan</button>
-      </div>
-
-      <div id="reader" aria-label="QR Reader"></div>
-
-      <div class="card status yellow" style="box-shadow:none; margin-top:10px;">
-        <div style="font-weight:900; margin-bottom:4px;">Hasil</div>
-        <div id="result" class="muted">Belum ada hasil.</div>
-      </div>
-    </div>
+  <section id="scanSection" style="display:none;">
+    <h2>Scan Barang</h2>
+    <button id="scanMasukBtn" style="background:#0a8;">Scan Masuk</button>
+    <button id="scanKeluarBtn" style="background:#c33;">Scan Keluar</button>
+    <button id="stopScanBtn">Stop Scan</button>
+    <button id="clearScanBtn">Bersihkan</button>
+    <textarea id="scanArea" rows="5" style="width:100%; margin-top:10px;" placeholder="Scan barcode lalu tekan Enter"></textarea>
+    <div id="scanResult">Belum ada hasil.</div>
   </section>
 
-  <!-- Safer: keep audio optional; if blocked by autoplay policy, we fail silently -->
-  <audio id="beep" preload="auto">
-    <source src="https://www.soundjay.com/buttons/sounds/beep-01a.mp3" type="audio/mpeg">
-  </audio>
-
-</main>
+  <section id="printSection" style="display:none;">
+    <h2>Print Label</h2>
+    <label>Kategori</label><select id="printKategori"></select>
+    <label>Produk</label><select id="printProduk"></select>
+    <label>Warna</label><select id="printWarna"></select>
+    <label>Size</label><select id="printSize"></select>
+    <label>Jumlah Label</label><input type="number" id="printQty" min="1" max="1000" value="1" />
+    <button id="generatePrintBtn">Generate Label</button>
+    <button id="printLabelBtn">Print</button>
+    <div id="hasil"></div>
+  </section>
+</div>
 
 <script>
-  // === CONFIG ===
-  const URL_API = "https://script.google.com/macros/s/AKfycbyXliEmg_J_mh2hAy62gS_AiaVKbFCQNJGaQPuHdmaNX2xsVNE1O78dw2gK0ZbcQ5wh/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbyXliEmg_J_mh2hAy62gS_AiaVKbFCQNJGaQPuHdmaNX2xsVNE1O78dw2gK0ZbcQ5wh/exec"; // Ganti dengan URL Web App GAS Anda
 
-  // === DOM ===
-  const $ = (s) => document.querySelector(s);
+  // Elemen
+  const loginSection = document.getElementById('loginSection');
+  const appSection = document.getElementById('appSection');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginMsg = document.getElementById('loginMsg');
+  const logoutBtn = document.getElementById('logoutBtn');
 
-  const loginPage = $("#loginPage");
-  const menu = $("#menu");
+  const navDashboard = document.getElementById('navDashboard');
+  const navFinder = document.getElementById('navFinder');
+  const navMatrix = document.getElementById('navMatrix');
+  const navScan = document.getElementById('navScan');
+  const navPrint = document.getElementById('navPrint');
 
-  const usernameEl = $("#username");
-  const passwordEl = $("#password");
-  const loginBtn = $("#loginBtn");
-  const loginHint = $("#loginHint");
+  const dashboardSection = document.getElementById('dashboardSection');
+  const finderSection = document.getElementById('finderSection');
+  const matrixSection = document.getElementById('matrixSection');
+  const scanSection = document.getElementById('scanSection');
+  const printSection = document.getElementById('printSection');
 
-  const headerUser = $("#headerUser");
-  const headerTime = $("#headerTime");
+  const dashboardContent = document.getElementById('dashboardContent');
+  const logscan = document.getElementById('logscan');
 
-  const historyEl = $("#history");
+  const finderKategori = document.getElementById('finderKategori');
+  const finderProduk = document.getElementById('finderProduk');
+  const finderWarna = document.getElementById('finderWarna');
+  const finderSize = document.getElementById('finderSize');
+  const finderSearchBtn = document.getElementById('finderSearchBtn');
+  const finderResult = document.getElementById('finderResult');
 
-  const f_kategori = $("#f_kategori");
-  const f_produk = $("#f_produk");
-  const f_warna = $("#f_warna");
-  const f_size = $("#f_size");
-  const finderBtn = $("#finderBtn");
-  const finderResult = $("#finderResult");
+  const matrixLoadBtn = document.getElementById('matrixLoadBtn');
+  const matrixResult = document.getElementById('matrixResult');
 
-  const m_kategori = $("#m_kategori");
-  const m_produk = $("#m_produk");
-  const m_warna = $("#m_warna");
-  const matrixBtn = $("#matrixBtn");
-  const matrixResult = $("#matrixResult");
+  const scanMasukBtn = document.getElementById('scanMasukBtn');
+  const scanKeluarBtn = document.getElementById('scanKeluarBtn');
+  const stopScanBtn = document.getElementById('stopScanBtn');
+  const clearScanBtn = document.getElementById('clearScanBtn');
+  const scanArea = document.getElementById('scanArea');
+  const scanResult = document.getElementById('scanResult');
 
-  const scanInBtn = $("#scanInBtn");
-  const scanOutBtn = $("#scanOutBtn");
-  const stopScanBtn = $("#stopScanBtn");
-  const clearResultBtn = $("#clearResultBtn");
-  const resultEl = $("#result");
-  const beepEl = $("#beep");
+  const printKategori = document.getElementById('printKategori');
+  const printProduk = document.getElementById('printProduk');
+  const printWarna = document.getElementById('printWarna');
+  const printSize = document.getElementById('printSize');
+  const printQty = document.getElementById('printQty');
+  const generatePrintBtn = document.getElementById('generatePrintBtn');
+  const printLabelBtn = document.getElementById('printLabelBtn');
+  const hasil = document.getElementById('hasil');
 
-  const toastEl = $("#toast");
-  const toastDot = $("#toastDot");
-  const toastTitle = $("#toastTitle");
-  const toastMsg = $("#toastMsg");
+  let dataProduk = [];
+  let scanning = false;
+  let scanType = null;
 
-  // === STATE ===
-  let currentUser = "";
-  let dataDrop = {};
-  let clockTimer = null;
-
-  let qr = null;
-  let isScanning = false;
-  let scanMode = null;
-
-  // === HELPERS ===
-  function showToast(kind, title, msg, ms = 2200){
-    toastDot.className = "dot " + (kind || "");
-    toastTitle.textContent = title || "Info";
-    toastMsg.textContent = msg || "";
-    toastEl.classList.add("show");
-    window.clearTimeout(showToast._t);
-    showToast._t = window.setTimeout(() => toastEl.classList.remove("show"), ms);
+  // Fungsi bantu
+  function esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-
-  async function apiPost(payload){
-  try{
-    console.log("API POST", payload);
-    const res = await fetch(URL_API, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" }, // hindari preflight
-      body: JSON.stringify(payload)
-    });
-
-    console.log("Status:", res.status, res.statusText);
-    const text = await res.text();
-    console.log("Response text:", text);
-
-    try { return JSON.parse(text); } catch(e) { return text; }
-  } catch(err){
-    console.error("Fetch error:", err);
-    throw err; // biarkan caller menanganinya
-  }
-
-
-    const text = await res.text();
-    // Try JSON first; if fails, return raw text
-    try { return JSON.parse(text); }
-    catch { return text; }
-  }
-
-  function setBusy(btn, busy, labelBusy = "Memproses..."){
-    if(!btn) return;
-    btn.disabled = !!busy;
-    btn.dataset._label = btn.dataset._label || btn.textContent;
-    btn.textContent = busy ? labelBusy : btn.dataset._label;
-  }
-
-  function showPage(id){
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    const el = document.getElementById(id);
-    if(el) el.classList.add("active");
-  }
-
-  function fillSelect(selectEl, arr, placeholder = "Pilih"){
-    selectEl.innerHTML = "";
-    const opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = placeholder;
-    selectEl.appendChild(opt0);
-
-    (arr || []).forEach(v => {
-      const opt = document.createElement("option");
+  function fillSelect(sel, arr) {
+    sel.innerHTML = '<option value="">Pilih</option>';
+    arr.forEach(v => {
+      const opt = document.createElement('option');
       opt.value = v;
       opt.textContent = v;
-      selectEl.appendChild(opt);
+      sel.appendChild(opt);
     });
   }
+  function unique(arr, key) {
+    return [...new Set(arr.map(x => x[key]).filter(Boolean))];
+  }
+  function filterData(filter) {
+    return dataProduk.filter(p => {
+      return (!filter.kategori || p.kategori === filter.kategori) &&
+             (!filter.produk || p.produk === filter.produk) &&
+             (!filter.warna || p.warna === filter.warna) &&
+             (!filter.size || p.size === filter.size);
+    });
+  }
+  function createLabelHtml(d) {
+    const barcodeUrl = 'https://bwipjs-api.metafloor.com/?bcid=code128&scale=3&height=22&includetext=false&text=' + encodeURIComponent(d.sku);
+    const qrCodeUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=100x100&chl=' + encodeURIComponent(d.sku);
+    return `
+      <div class="label" role="article" aria-label="Label ${esc(d.sku)}">
+        <div>
+          <div class="title">${esc(d.kategori)}</div>
+          <div class="sub">${esc(d.produk)}</div>
+          <div class="sub">${esc(d.warna)} - ${esc(d.size)}</div>
+          <div class="sub">${esc(d.sku)}</div>
+        </div>
+        <img class="barcode" src="${barcodeUrl}" alt="Barcode ${esc(d.sku)}">
+        <img class="qrcode" src="${qrCodeUrl}" alt="QR Code ${esc(d.sku)}">
+      </div>`;
+  }
+  function renderLabels(arr) {
+    hasil.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    arr.forEach(d => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = createLabelHtml(d);
+      frag.appendChild(wrapper.firstElementChild);
+    });
+    hasil.appendChild(frag);
+    hasil.focus();
+  }
 
-  function ensureLoggedIn(){
-    const raw = localStorage.getItem("user");
-    if(!raw) return false;
-    try{
-      const user = JSON.parse(raw);
-      if(!user || !user.nama) return false;
-      currentUser = user.nama;
-      return true;
-    }catch(e){
-      return false;
+  // Login
+  loginBtn.addEventListener('click', () => {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!username || !password) {
+      loginMsg.textContent = "Username dan password wajib diisi.";
+      return;
+    }
+    loginMsg.textContent = "Memproses...";
+    fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({action:"login", username, password})
+    }).then(res => res.json())
+      .then(res => {
+        if (res.status === "success") {
+          loginSection.style.display = "none";
+          appSection.style.display = "block";
+          loginMsg.textContent = "";
+          loadProduk();
+          showSection('dashboard');
+        } else {
+          loginMsg.textContent = res.message || "Login gagal";
+        }
+      }).catch(() => {
+        loginMsg.textContent = "Gagal koneksi ke server.";
+      });
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    appSection.style.display = "none";
+    loginSection.style.display = "block";
+  });
+
+  // Navigasi
+  function showSection(name) {
+    [dashboardSection, finderSection, matrixSection, scanSection, printSection].forEach(sec => sec.style.display = "none");
+    switch(name) {
+      case 'dashboard': dashboardSection.style.display = "block"; loadDashboard(); break;
+      case 'finder': finderSection.style.display = "block"; break;
+      case 'matrix': matrixSection.style.display = "block"; break;
+      case 'scan': scanSection.style.display = "block"; break;
+      case 'print': printSection.style.display = "block"; break;
     }
   }
+  navDashboard.onclick = () => showSection('dashboard');
+  navFinder.onclick = () => showSection('finder');
+  navMatrix.onclick = () => showSection('matrix');
+  navScan.onclick = () => showSection('scan');
+  navPrint.onclick = () => showSection('print');
 
-  function updateHeaderClock(){
-    headerUser.textContent = currentUser || "";
-    if(clockTimer) clearInterval(clockTimer);
-    const tick = () => headerTime.textContent = new Date().toLocaleTimeString("id-ID", { hour12:false });
-    tick();
-    clockTimer = setInterval(tick, 1000);
+  // Load Produk
+  function loadProduk() {
+    fetch(API_URL + "?action=getProducts")
+      .then(res => res.json())
+      .then(json => {
+        dataProduk = json.filter(p => p.sku);
+        fillSelect(printKategori, unique(dataProduk, 'kategori'));
+        fillSelect(finderKategori, unique(dataProduk, 'kategori'));
+      });
   }
 
-  // === APP INIT ===
-  document.addEventListener("DOMContentLoaded", async () => {
-    // Menu navigation
-    menu.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-target]");
-      if(!btn) return;
-      const id = btn.getAttribute("data-target");
-      showPage(id);
+  // Update dropdown print dan finder secara berantai
+  printKategori.addEventListener('change', () => {
+    const k = printKategori.value;
+    fillSelect(printProduk, k ? unique(dataProduk.filter(p => p.kategori === k), 'produk') : []);
+    fillSelect(printWarna, []);
+    fillSelect(printSize, []);
+  });
+  printProduk.addEventListener('change', () => {
+    const k = printKategori.value;
+    const p = printProduk.value;
+    fillSelect(printWarna, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p)).map(pdt => pdt.warna));
+    fillSelect(printSize, []);
+  });
+  printWarna.addEventListener('change', () => {
+    const k = printKategori.value;
+    const p = printProduk.value;
+    const w = printWarna.value;
+    fillSelect(printSize, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p) && (!w || pdt.warna === w)).map(pdt => pdt.size));
+  });
 
-      // stop scanning when leaving scan page
-      if(id !== "scan") stopScan();
-    });
+  finderKategori.addEventListener('change', () => {
+    const k = finderKategori.value;
+    fillSelect(finderProduk, k ? unique(dataProduk.filter(p => p.kategori === k), 'produk') : []);
+    fillSelect(finderWarna, []);
+    fillSelect(finderSize, []);
+  });
+  finderProduk.addEventListener('change', () => {
+    const k = finderKategori.value;
+    const p = finderProduk.value;
+    fillSelect(finderWarna, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p)).map(pdt => pdt.warna));
+    fillSelect(finderSize, []);
+  });
+  finderWarna.addEventListener('change', () => {
+    const k = finderKategori.value;
+    const p = finderProduk.value;
+    const w = finderWarna.value;
+    fillSelect(finderSize, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p) && (!w || pdt.warna === w)).map(pdt => pdt.size));
+  });
 
-    // Login handlers
-    loginBtn.addEventListener("click", login);
-    passwordEl.addEventListener("keydown", (e) => {
-      if(e.key === "Enter") login();
-    });
+  // Generate Label Print
+  generatePrintBtn.addEventListener('click', () => {
+    const k = printKategori.value;
+    const p = printProduk.value;
+    const w = printWarna.value;
+    const s = printSize.value;
+    const q = parseInt(printQty.value) || 1;
+    if (!k || !p || !w || !s) {
+      alert("Lengkapi pilihan kategori, produk, warna, dan size.");
+      return;
+    }
+    if (q < 1 || q > 1000) {
+      alert("Jumlah label harus antara 1 sampai 1000.");
+      return;
+    }
+    const produk = dataProduk.find(d => d.kategori === k && d.produk === p && d.warna === w && d.size === s);
+    if (!produk) {
+      alert("Produk tidak ditemukan.");
+      return;
+    }
+    renderLabels(Array(q).fill(produk));
+  });
 
-    // Finder dropdown chain
-    f_kategori.addEventListener("change", () => {
-      fillSelect(f_produk, (dataDrop.produk && dataDrop.produk[f_kategori.value]) || [], "Pilih produk");
-      fillSelect(f_warna, [], "Pilih warna");
-      fillSelect(f_size, [], "Pilih size");
-    });
-    f_produk.addEventListener("change", () => {
-      const key = `${f_kategori.value}|${f_produk.value}`;
-      fillSelect(f_warna, (dataDrop.warna && dataDrop.warna[key]) || [], "Pilih warna");
-      fillSelect(f_size, [], "Pilih size");
-    });
-    f_warna.addEventListener("change", () => {
-      const key = `${f_kategori.value}|${f_produk.value}|${f_warna.value}`;
-      fillSelect(f_size, (dataDrop.size && dataDrop.size[key]) || [], "Pilih size");
-    });
+  printLabelBtn.addEventListener('click', () => {
+    if (!hasil.children.length) {
+      alert("Tidak ada label untuk dicetak.");
+      return;
+    }
+    window.print();
+  });
 
-    // Matrix dropdown chain
-    m_kategori.addEventListener("change", () => {
-      fillSelect(m_produk, (dataDrop.produk && dataDrop.produk[m_kategori.value]) || [], "Pilih produk");
-      fillSelect(m_warna, [], "Pilih warna");
-    });
-    m_produk.addEventListener("change", () => {
-      const key = `${m_kategori.value}|${m_produk.value}`;
-      fillSelect(m_warna, (dataDrop.warna && dataDrop.warna[key]) || [], "Pilih warna");
-    });
+  // Load Dashboard
+  function loadDashboard() {
+    dashboardContent.textContent = "Memuat data...";
+    fetch(API_URL + "?action=dashboard")
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          dashboardContent.textContent = json.message || "Dashboard loaded.";
+        } else {
+          dashboardContent.textContent = "Gagal memuat dashboard.";
+        }
+      });
+    loadLogScan();
+  }
 
-    finderBtn.addEventListener("click", loadFinder);
-    matrixBtn.addEventListener("click", loadMatrix);
+  // Load Log Scan (dari DATA_TRANSAKSI)
+  function loadLogScan() {
+    logscan.textContent = "Memuat aktivitas terakhir...";
+    fetch(API_URL + "?action=logscan")
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          if(json.data.length === 0) {
+            logscan.textContent = "Belum ada aktivitas.";
+            return;
+          }
+          logscan.innerHTML = json.data.map(log => `
+            <div>
+              <strong>${log.tanggal} ${log.jam}</strong> - SKU: ${log.sku} - ${log.jenis} - Qty: ${log.qty} - Admin: ${log.admin}
+            </div>
+          `).join("");
+        } else {
+          logscan.textContent = "Gagal memuat aktivitas.";
+        }
+      });
+  }
 
-    scanInBtn.addEventListener("click", () => startScan("MASUK"));
-    scanOutBtn.addEventListener("click", () => startScan("KELUAR"));
-    stopScanBtn.addEventListener("click", stopScan);
-    clearResultBtn.addEventListener("click", () => {
-      resultEl.textContent = "Belum ada hasil.";
-      showToast("", "Bersih", "Hasil scan dibersihkan.");
-    });
+  // Finder Search
+  finderSearchBtn.addEventListener('click', () => {
+    const filter = {
+      kategori: finderKategori.value,
+      produk: finderProduk.value,
+      warna: finderWarna.value,
+      size: finderSize.value
+    };
+    finderResult.textContent = "Mencari...";
+    const params = new URLSearchParams(filter);
+    fetch(API_URL + "?action=finder&" + params.toString())
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          if(json.data.length === 0) {
+            finderResult.textContent = "Data tidak ditemukan.";
+            return;
+          }
+          finderResult.innerHTML = json.data.map(d => `
+            <div>
+              <strong>${d.sku}</strong> - ${d.kategori} ${d.produk} ${d.warna} ${d.size} - Stok: ${d.stokakhir} - Lokasi: ${d.lokasi}
+            </div>
+          `).join("");
+        } else {
+          finderResult.textContent = "Gagal mencari data.";
+        }
+      });
+  });
 
-    // Restore session if exists
-    if(ensureLoggedIn()){
-      await loginSuccess();
-    } else {
-      loginPage.style.display = "block";
-      menu.style.display = "none";
-      showPage("loginPage");
-      loginHint.textContent = "";
+  // Matrix Load
+  matrixLoadBtn.addEventListener('click', () => {
+    matrixResult.textContent = "Memuat matrix...";
+    fetch(API_URL + "?action=matrix")
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          matrixResult.textContent = JSON.stringify(json.data, null, 2);
+        } else {
+          matrixResult.textContent = "Gagal memuat matrix.";
+        }
+      });
+  });
+
+  // Scan Barang
+  scanMasukBtn.addEventListener('click', () => {
+    scanning = true;
+    scanType = "MASUK";
+    scanResult.textContent = "Mode scan MASUK aktif. Scan barcode...";
+    scanArea.focus();
+  });
+
+  scanKeluarBtn.addEventListener('click', () => {
+    scanning = true;
+    scanType = "KELUAR";
+    scanResult.textContent = "Mode scan KELUAR aktif. Scan barcode...";
+    scanArea.focus();
+  });
+
+  stopScanBtn.addEventListener('click', () => {
+    scanning = false;
+    scanType = null;
+    scanResult.textContent = "Scan dihentikan.";
+  });
+
+  clearScanBtn.addEventListener('click', () => {
+    scanArea.value = "";
+    scanResult.textContent = "Belum ada hasil.";
+  });
+
+  scanArea.addEventListener('keydown', e => {
+    if (!scanning) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const sku = scanArea.value.trim();
+      if (!sku) return;
+      scanArea.value = "";
+      fetch(API_URL, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({action:"scan", sku: sku, tipe: scanType, admin: "admin1"})
+      }).then(res => res.json())
+        .then(res => {
+          if(res.status === "success") {
+            scanResult.textContent = res.message;
+            loadLogScan();
+          } else {
+            scanResult.textContent = "Error: " + (res.message || "Gagal scan");
+          }
+        }).catch(() => {
+          scanResult.textContent = "Gagal koneksi server.";
+        });
     }
   });
 
-  // === LOGIN FLOW ===
-  async function login(){
-    const u = usernameEl.value.trim();
-    const p = passwordEl.value;
-
-    if(!u || !p){
-      showToast("warn", "Input belum lengkap", "Username dan password harus diisi.");
-      return;
-    }
-
-    setBusy(loginBtn, true, "LOGIN...");
-    loginHint.textContent = "Menghubungi server...";
-
-    try{
-      const data = await apiPost({
-        action: "login",
-        username: u,
-        password: p
-      });
-
-      // Expecting JSON: {status:"success", nama:"..."} etc.
-      if(data && typeof data === "object" && data.status === "success"){
-        localStorage.setItem("user", JSON.stringify(data));
-        currentUser = data.nama || u;
-
-        passwordEl.value = "";
-        showToast("ok", "Berhasil", "Login sukses.");
-        await loginSuccess();
-      }else{
-        showToast("bad", "Login gagal", (data && data.message) ? data.message : "Username atau password salah.");
-        loginHint.textContent = "Periksa kembali akun Anda.";
-      }
-    }catch(err){
-      console.error(err);
-      showToast("bad", "Error jaringan", "Tidak bisa menghubungi API. Coba lagi.");
-      loginHint.textContent = "Koneksi atau API bermasalah.";
-    }finally{
-      setBusy(loginBtn, false);
-    }
-  }
-
-  async function loginSuccess(){
-    loginPage.style.display = "none";
-    menu.style.display = "flex";
-
-    updateHeaderClock();
-    showPage("dashboard");
-
-    // Load essential data
-    await Promise.allSettled([
-      loadDashboard(),
-      loadDropdown()
-    ]);
-  }
-
-  function logout(){
-    stopScan();
-    localStorage.removeItem("user");
-    localStorage.removeItem("user.nama");
-    localStorage.clear();
-    location.reload();
-  }
-
-  // === DASHBOARD ===
-  async function loadDashboard(){
-    historyEl.innerHTML = `<div class="card status yellow">Memuat dashboard...</div>`;
-    try{
-      const d = await apiPost({ action: "dashboard" });
-      if(!Array.isArray(d)){
-        historyEl.innerHTML = `<div class="card status red">Format data dashboard tidak sesuai.</div>`;
-        return;
-      }
-      historyEl.innerHTML = d.map(r => {
-        const t = (r && r[2]) ? r[2] : "Aktivitas";
-        const info = (r && r[3]) ? r[3] : "";
-        return `<div class="card">${escapeHtml(t)} ${info ? `<span class="muted">(${escapeHtml(info)})</span>` : ""}</div>`;
-      }).join("");
-    }catch(e){
-      console.error(e);
-      historyEl.innerHTML = `<div class="card status red">Gagal memuat dashboard.</div>`;
-    }
-  }
-
-  // === DROPDOWNS ===
-  async function loadDropdown(){
-    // Prepare initial empty selects
-    fillSelect(f_kategori, [], "Pilih kategori");
-    fillSelect(f_produk, [], "Pilih produk");
-    fillSelect(f_warna, [], "Pilih warna");
-    fillSelect(f_size, [], "Pilih size");
-
-    fillSelect(m_kategori, [], "Pilih kategori");
-    fillSelect(m_produk, [], "Pilih produk");
-    fillSelect(m_warna, [], "Pilih warna");
-
-    try{
-      const dd = await apiPost({ action: "dropdown" });
-      if(!dd || typeof dd !== "object"){
-        showToast("bad", "Dropdown", "Data dropdown tidak valid.");
-        return;
-      }
-      dataDrop = dd;
-
-      fillSelect(f_kategori, dataDrop.kategori || [], "Pilih kategori");
-      fillSelect(m_kategori, dataDrop.kategori || [], "Pilih kategori");
-    }catch(e){
-      console.error(e);
-      showToast("bad", "Dropdown", "Gagal memuat dropdown.");
-    }
-  }
-
-  // === FINDER ===
-  async function loadFinder(){
-    const payload = {
-      action: "finder",
-      k: f_kategori.value,
-      p: f_produk.value,
-      w: f_warna.value,
-      s: f_size.value
-    };
-
-    if(!payload.k || !payload.p || !payload.w || !payload.s){
-      showToast("warn", "Filter belum lengkap", "Lengkapi kategori, produk, warna, dan size.");
-      return;
-    }
-
-    setBusy(finderBtn, true, "Mencari...");
-    finderResult.innerHTML = `<div class="card status yellow">Memuat hasil...</div>`;
-
-    try{
-      const data = await apiPost(payload);
-      if(!Array.isArray(data)){
-        finderResult.innerHTML = `<div class="card status red">Format data finder tidak sesuai.</div>`;
-        return;
-      }
-
-      if(data.length === 0){
-        finderResult.innerHTML = `<div class="card status yellow">Tidak ada data ditemukan.</div>`;
-        return;
-      }
-
-      finderResult.innerHTML = data.map(r => {
-        const sku = (r && r[0]) ? r[0] : "-";
-        const stok = (r && r[8] != null) ? r[8] : "-";
-        return `<div class="card"><b>${escapeHtml(String(sku))}</b> <span class="muted">—</span> ${escapeHtml(String(stok))} pcs</div>`;
-      }).join("");
-
-    }catch(e){
-      console.error(e);
-      finderResult.innerHTML = `<div class="card status red">Gagal memuat finder.</div>`;
-    }finally{
-      setBusy(finderBtn, false);
-    }
-  }
-
-  // === MATRIX ===
-  async function loadMatrix(){
-    const payload = {
-      action: "matrix",
-      k: m_kategori.value,
-      p: m_produk.value,
-      w: m_warna.value
-    };
-
-    if(!payload.k || !payload.p || !payload.w){
-      showToast("warn", "Filter belum lengkap", "Lengkapi kategori, produk, dan warna.");
-      return;
-    }
-
-    setBusy(matrixBtn, true, "Memuat...");
-    matrixResult.innerHTML = `<div class="card status yellow">Memuat matrix...</div>`;
-
-    try{
-      const d = await apiPost(payload);
-      if(!Array.isArray(d)){
-        matrixResult.innerHTML = `<div class="card status red">Format data matrix tidak sesuai.</div>`;
-        return;
-      }
-
-      if(d.length === 0){
-        matrixResult.innerHTML = `<div class="card status yellow">Tidak ada data.</div>`;
-        return;
-      }
-
-      let html = `<table aria-label="Matrix stok"><thead><tr><th>Size</th><th>Stok</th></tr></thead><tbody>`;
-      d.forEach(r => {
-        const size = (r && r[4] != null) ? r[4] : "-";
-        const stok = (r && r[8] != null) ? r[8] : "-";
-        html += `<tr><td>${escapeHtml(String(size))}</td><td>${escapeHtml(String(stok))}</td></tr>`;
-      });
-      html += `</tbody></table>`;
-      matrixResult.innerHTML = html;
-
-    }catch(e){
-      console.error(e);
-      matrixResult.innerHTML = `<div class="card status red">Gagal memuat matrix.</div>`;
-    }finally{
-      setBusy(matrixBtn, false);
-    }
-  }
-
-  // === SCAN ===
-  async function startScan(mode){
-    if(isScanning){
-      showToast("warn", "Scanner aktif", "Hentikan scan dulu sebelum memulai mode lain.");
-      return;
-    }
-
-    scanMode = mode;
-    isScanning = true;
-    resultEl.textContent = "Menyalakan kamera...";
-    setScanButtonsState(true);
-
-    // Create instance once per scanning session
-    qr = new Html5Qrcode("reader");
-
-    try{
-      await qr.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        async (text) => {
-          // On success decode: stop immediately to avoid multiple posts
-          await stopScan();
-
-          resultEl.textContent = `Mengirim: ${text}`;
-          showToast("ok", "QR terbaca", `Mode: ${mode}. Mengirim ke server...`, 1800);
-
-          try{
-            const resp = await apiPost({
-              action: "scan",
-              sku: text,
-              tipe: mode,
-              admin: currentUser
-            });
-
-            const msg = (typeof resp === "string") ? resp : JSON.stringify(resp);
-            resultEl.textContent = msg;
-
-            if(String(msg).trim().toUpperCase() === "SUCCESS"){
-              try{ await beepEl.play(); }catch(_) {}
-              showToast("ok", "SUCCESS", "Scan berhasil diproses.");
-              // refresh dashboard silently
-              loadDashboard();
-            }else{
-              showToast("warn", "Respon", String(msg).slice(0, 80));
-            }
-          }catch(e){
-            console.error(e);
-            resultEl.textContent = "Gagal mengirim ke server.";
-            showToast("bad", "Gagal", "Tidak bisa mengirim hasil scan ke API.");
-          }
-        },
-        (err) => {
-          // decode error: ignore noisy logs to keep UI clean
-        }
-      );
-
-      resultEl.textContent = `Scanner aktif (${mode}). Arahkan kamera ke QR.`;
-      showToast("", "Scanner aktif", `Mode: ${mode}`);
-
-    }catch(e){
-      console.error(e);
-      isScanning = false;
-      setScanButtonsState(false);
-      resultEl.textContent = "Tidak bisa mengakses kamera. Pastikan izin kamera diaktifkan.";
-      showToast("bad", "Kamera ditolak", "Berikan izin kamera atau gunakan HTTPS.");
-      // Ensure resources are freed
-      try{ await qr?.stop(); }catch(_){}
-      try{ await qr?.clear(); }catch(_){}
-      qr = null;
-    }
-  }
-
-  async function stopScan(){
-    if(!qr) {
-      isScanning = false;
-      setScanButtonsState(false);
-      return;
-    }
-    try{
-      await qr.stop();
-    }catch(_){}
-    try{
-      await qr.clear();
-    }catch(_){}
-    qr = null;
-    isScanning = false;
-    setScanButtonsState(false);
-  }
-
-  function setScanButtonsState(scanning){
-    scanInBtn.disabled = scanning;
-    scanOutBtn.disabled = scanning;
-    stopScanBtn.disabled = !scanning;
-  }
-
-  // === SECURITY/ROBUSTNESS: escape HTML from sheet data ===
-  function escapeHtml(str){
-    return String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+  // Inisialisasi tampilan awal
+  showSection('dashboard');
 </script>
+
 </body>
 </html>
