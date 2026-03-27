@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gudang Spalva - Aplikasi Gudang Lengkap</title>
+<style>
+  /* Reset dan dasar */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    margin: 16px;
+    background-color: #f6f7fb;
+    color: #111;
+  }
+  h1, h2, h3 {
+    margin-bottom: 12px;
+  }
+  label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-weight: bold;
+  }
+  input[type=text], input[type=password], input[type=number], select, textarea {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline-offset: 2px;
+  }
+  button {
+    margin-top: 16px;
+    background-color: #111;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover, button:focus {
+    background-color: #333;
+  }
+  nav {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  nav button {
+    flex: 1 1 120px;
+  }
+  #loginMsg {
+    margin-top: 8px;
+    color: red;
+  }
+  #hasil, #logscan, #finderResult, #matrixResult, #scanResult {
+    margin-top: 20px;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px dashed #ccc;
+    min-height: 150px;
+    overflow-y: auto;
+    max-height: 300px;
+  }
+  .label {
+    width: 50mm;
+    height: 30mm;
+    padding: 4mm;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 12px;
+    background: white;
+    margin-bottom: 10px;
+  }
+  .label .title {
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .label .sub {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+  }
+  .barcode {
+    width: 100%;
+    height: 18mm;
+    object-fit: contain;
+    margin-top: 6px;
+  }
+  .qrcode {
+    width: 30mm;
+    height: 30mm;
+    object-fit: contain;
+    margin-top: 4px;
+  }
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #hasil, #hasil * {
+      visibility: visible;
+    }
+    #hasil {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    .label {
+      page-break-inside: avoid;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Gudang Spalva</h1>
+
+<!-- Login Section -->
+<div id="loginSection">
+  <h2>Login</h2>
+  <label for="username">Username</label>
+  <input type="text" id="username" autocomplete="username" />
+  <label for="password">Password</label>
+  <input type="password" id="password" autocomplete="current-password" />
+  <button id="loginBtn">Login</button>
+  <div id="loginMsg" role="alert"></div>
+</div>
+
+<!-- Main App Section -->
+<div id="appSection" style="display:none;">
+  <nav aria-label="Main navigation">
+    <button id="navDashboard" aria-controls="dashboardSection" aria-selected="true">Dashboard</button>
+    <button id="navFinder" aria-controls="finderSection" aria-selected="false">Finder</button>
+    <button id="navMatrix" aria-controls="matrixSection" aria-selected="false">Matrix</button>
+    <button id="navScan" aria-controls="scanSection" aria-selected="false">Scan</button>
+    <button id="navPrint" aria-controls="printSection" aria-selected="false">Print Label</button>
+    <button id="logoutBtn" style="background:#b33;">Logout</button>
+  </nav>
+
+  <!-- Dashboard -->
+  <section id="dashboardSection" tabindex="0" style="display:block;">
+    <h2>Dashboard</h2>
+    <div id="dashboardContent">Memuat data...</div>
+    <h3>Aktivitas Terakhir</h3>
+    <div id="logscan" aria-live="polite"></div>
+  </section>
+
+  <!-- Finder -->
+  <section id="finderSection" tabindex="0" style="display:none;">
+    <h2>Finder</h2>
+    <label for="finderKategori">Kategori</label>
+    <select id="finderKategori"></select>
+    <label for="finderProduk">Produk</label>
+    <select id="finderProduk"></select>
+    <label for="finderWarna">Warna</label>
+    <select id="finderWarna"></select>
+    <label for="finderSize">Size</label>
+    <select id="finderSize"></select>
+    <button id="finderSearchBtn">Cari</button>
+    <div id="finderResult" aria-live="polite"></div>
+  </section>
+
+  <!-- Matrix -->
+  <section id="matrixSection" tabindex="0" style="display:none;">
+    <h2>Matrix</h2>
+    <button id="matrixLoadBtn">Load Matrix</button>
+    <pre id="matrixResult"></pre>
+  </section>
+
+  <!-- Scan -->
+  <section id="scanSection" tabindex="0" style="display:none;">
+    <h2>Scan Barang</h2>
+    <button id="scanMasukBtn" style="background:#0a8;">Scan Masuk</button>
+    <button id="scanKeluarBtn" style="background:#c33;">Scan Keluar</button>
+    <button id="stopScanBtn">Stop Scan</button>
+    <button id="clearScanBtn">Bersihkan</button>
+    <textarea id="scanArea" rows="5" placeholder="Scan barcode lalu tekan Enter"></textarea>
+    <div id="scanResult" aria-live="polite">Belum ada hasil.</div>
+  </section>
+
+  <!-- Print Label -->
+  <section id="printSection" tabindex="0" style="display:none;">
+    <h2>Print Label</h2>
+    <label for="printKategori">Kategori</label>
+    <select id="printKategori"></select>
+    <label for="printProduk">Produk</label>
+    <select id="printProduk"></select>
+    <label for="printWarna">Warna</label>
+    <select id="printWarna"></select>
+    <label for="printSize">Size</label>
+    <select id="printSize"></select>
+    <label for="printQty">Jumlah Label</label>
+    <input type="number" id="printQty" min="1" max="1000" value="1" />
+    <button id="generatePrintBtn">Generate Label</button>
+    <button id="printLabelBtn">Print</button>
+    <div id="hasil" aria-live="polite"></div>
+  </section>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbweMfOJGQRFCWxph9tq-jhgjnI7slOWDN5EED0NMwI4Cc2ZE59etkTNJsjYpgxcPjB_/exec"; // Ganti dengan URL Web App GAS Anda
+
+  // Elemen DOM
+  const loginSection = document.getElementById('loginSection');
+  const appSection = document.getElementById('appSection');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginMsg = document.getElementById('loginMsg');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const navButtons = [...document.querySelectorAll('nav button:not(#logoutBtn)')];
+  const sections = {
+    dashboard: document.getElementById('dashboardSection'),
+    finder: document.getElementById('finderSection'),
+    matrix: document.getElementById('matrixSection'),
+    scan: document.getElementById('scanSection'),
+    print: document.getElementById('printSection')
+  };
+
+  // Dropdown finder
+  const finderKategori = document.getElementById('finderKategori');
+  const finderProduk = document.getElementById('finderProduk');
+  const finderWarna = document.getElementById('finderWarna');
+  const finderSize = document.getElementById('finderSize');
+  const finderSearchBtn = document.getElementById('finderSearchBtn');
+  const finderResult = document.getElementById('finderResult');
+
+  // Dropdown print
+  const printKategori = document.getElementById('printKategori');
+  const printProduk = document.getElementById('printProduk');
+  const printWarna = document.getElementById('printWarna');
+  const printSize = document.getElementById('printSize');
+  const printQty = document.getElementById('printQty');
+  const generatePrintBtn = document.getElementById('generatePrintBtn');
+  const printLabelBtn = document.getElementById('printLabelBtn');
+  const hasil = document.getElementById('hasil');
+
+  // Dashboard
+  const dashboardContent = document.getElementById('dashboardContent');
+  const logscan = document.getElementById('logscan');
+
+  // Scan
+  const scanMasukBtn = document.getElementById('scanMasukBtn');
+  const scanKeluarBtn = document.getElementById('scanKeluarBtn');
+  const stopScanBtn = document.getElementById('stopScanBtn');
+  const clearScanBtn = document.getElementById('clearScanBtn');
+  const scanArea = document.getElementById('scanArea');
+  const scanResult = document.getElementById('scanResult');
+
+  let dataProduk = [];
+  let scanning = false;
+  let scanType = null;
+
+  // Utility functions
+  function esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fillSelect(sel, arr) {
+    sel.innerHTML = '<option value="">Pilih</option>';
+    arr.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+  function unique(arr, key) {
+    return [...new Set(arr.map(x => x[key]).filter(Boolean))];
+  }
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+  function filterData(filter) {
+    return dataProduk.filter(p => {
+      return (!filter.kategori || p.kategori === filter.kategori) &&
+             (!filter.produk || p.produk === filter.produk) &&
+             (!filter.warna || p.warna === filter.warna) &&
+             (!filter.size || p.size === filter.size);
+    });
+  }
+  function createLabelHtml(d) {
+    const barcodeUrl = 'https://bwipjs-api.metafloor.com/?bcid=code128&scale=3&height=22&includetext=false&text=' + encodeURIComponent(d.sku);
+    const qrCodeUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=100x100&chl=' + encodeURIComponent(d.sku);
+    return `
+      <div class="label" role="article" aria-label="Label ${esc(d.sku)}">
+        <div>
+          <div class="title">${esc(d.kategori)}</div>
+          <div class="sub">${esc(d.produk)}</div>
+          <div class="sub">${esc(d.warna)} - ${esc(d.size)}</div>
+          <div class="sub">${esc(d.sku)}</div>
+        </div>
+        <img class="barcode" src="${barcodeUrl}" alt="Barcode ${esc(d.sku)}">
+        <img class="qrcode" src="${qrCodeUrl}" alt="QR Code ${esc(d.sku)}">
+      </div>`;
+  }
+  function renderLabels(arr) {
+    hasil.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    arr.forEach(d => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = createLabelHtml(d);
+      frag.appendChild(wrapper.firstElementChild);
+    });
+    hasil.appendChild(frag);
+    hasil.focus();
+  }
+
+  // Navigation
+  function showSection(name) {
+    Object.entries(sections).forEach(([key, section]) => {
+      section.style.display = (key === name) ? 'block' : 'none';
+      navButtons.find(btn => btn.id === 'nav' + capitalize(key))?.setAttribute('aria-selected', key === name);
+    });
+  }
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.id.replace('nav', '').toLowerCase();
+      showSection(name);
+    });
+  });
+  logoutBtn.addEventListener('click', () => {
+    appSection.style.display = 'none';
+    loginSection.style.display = 'block';
+    loginMsg.textContent = '';
+    clearLoginInputs();
+  });
+  function clearLoginInputs() {
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+  }
+
+  // Login
+  loginBtn.addEventListener('click', () => {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!username || !password) {
+      loginMsg.textContent = "Username dan password wajib diisi.";
+      return;
+    }
+    loginMsg.textContent = "Memproses...";
+    fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({action:"login", username, password})
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success") {
+        loginSection.style.display = 'none';
+        appSection.style.display = 'block';
+        loginMsg.textContent = '';
+        showSection('dashboard');
+        loadDashboard();
+        loadProduk();
+      } else {
+        loginMsg.textContent = res.message || "Login gagal";
+      }
+    })
+    .catch(() => {
+      loginMsg.textContent = "Gagal koneksi ke server.";
+    });
+  });
+
+  // Load Produk untuk dropdown finder & print
+  function loadProduk() {
+    fetch(API_URL + "?action=getProducts")
+      .then(res => res.json())
+      .then(json => {
+        dataProduk = json.filter(p => p.sku);
+        fillSelect(printKategori, unique(dataProduk, 'kategori'));
+        fillSelect(finderKategori, unique(dataProduk, 'kategori'));
+      });
+  }
+
+  // Update dropdown finder berantai
+  finderKategori.addEventListener('change', () => {
+    const k = finderKategori.value;
+    fillSelect(finderProduk, k ? unique(dataProduk.filter(p => p.kategori === k), 'produk') : []);
+    fillSelect(finderWarna, []);
+    fillSelect(finderSize, []);
+  });
+  finderProduk.addEventListener('change', () => {
+    const k = finderKategori.value;
+    const p = finderProduk.value;
+    fillSelect(finderWarna, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p)).map(pdt => pdt.warna));
+    fillSelect(finderSize, []);
+  });
+  finderWarna.addEventListener('change', () => {
+    const k = finderKategori.value;
+    const p = finderProduk.value;
+    const w = finderWarna.value;
+    fillSelect(finderSize, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p) && (!w || pdt.warna === w)).map(pdt => pdt.size));
+  });
+
+  // Update dropdown print berantai
+  printKategori.addEventListener('change', () => {
+    const k = printKategori.value;
+    fillSelect(printProduk, k ? unique(dataProduk.filter(p => p.kategori === k), 'produk') : []);
+    fillSelect(printWarna, []);
+    fillSelect(printSize, []);
+  });
+  printProduk.addEventListener('change', () => {
+    const k = printKategori.value;
+    const p = printProduk.value;
+    fillSelect(printWarna, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p)).map(pdt => pdt.warna));
+    fillSelect(printSize, []);
+  });
+  printWarna.addEventListener('change', () => {
+    const k = printKategori.value;
+    const p = printProduk.value;
+    const w = printWarna.value;
+    fillSelect(printSize, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p) && (!w || pdt.warna === w)).map(pdt => pdt.size));
+  });
+
+  // Finder Search
+  finderSearchBtn.addEventListener('click', () => {
+    const filter = {
+      kategori: finderKategori.value,
+      produk: finderProduk.value,
+      warna: finderWarna.value,
+      size: finderSize.value
+    };
+    finderResult.textContent = "Mencari...";
+    const params = new URLSearchParams(filter);
+    fetch(API_URL + "?action=finder&" + params.toString())
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          if(json.data.length === 0) {
+            finderResult.textContent = "Data tidak ditemukan.";
+            return;
+          }
+          finderResult.innerHTML = json.data.map(d => `
+            <div>
+              <strong>${d.sku}</strong> - ${d.kategori} ${d.produk} ${d.warna} ${d.size} - Stok: ${d.stokakhir} - Lokasi: ${d.lokasi}
+            </div>
+          `).join("");
+        } else {
+          finderResult.textContent = "Gagal mencari data.";
+        }
+      });
+  });
+
+  // Matrix Load
+  const matrixLoadBtn = document.getElementById('matrixLoadBtn');
+  const matrixResult = document.getElementById('matrixResult');
+  matrixLoadBtn.addEventListener('click', () => {
+    matrixResult.textContent = "Memuat matrix...";
+    fetch(API_URL + "?action=matrix")
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          matrixResult.textContent = JSON.stringify(json.data, null, 2);
+        } else {
+          matrixResult.textContent = "Gagal memuat matrix.";
+        }
+      });
+  });
+
+  // Scan Barang
+  scanMasukBtn.addEventListener('click', () => {
+    scanning = true;
+    scanType = "MASUK";
+    scanResult.textContent = "Mode scan MASUK aktif. Scan barcode...";
+    scanArea.focus();
+  });
+  scanKeluarBtn.addEventListener('click', () => {
+    scanning = true;
+    scanType = "KELUAR";
+    scanResult.textContent = "Mode scan KELUAR aktif. Scan barcode...";
+    scanArea.focus();
+  });
+  stopScanBtn.addEventListener('click', () => {
+    scanning = false;
+    scanType = null;
+    scanResult.textContent = "Scan dihentikan.";
+  });
+  clearScanBtn.addEventListener('click', () => {
+    scanArea.value = "";
+    scanResult.textContent = "Belum ada hasil.";
+  });
+  scanArea.addEventListener('keydown', e => {
+    if (!scanning) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const sku = scanArea.value.trim();
+      if (!sku) return;
+      scanArea.value = "";
+      fetch(API_URL, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({action:"scan", sku: sku, tipe: scanType, admin: "admin1"})
+      }).then(res => res.json())
+        .then(res => {
+          if(res.status === "success") {
+            scanResult.textContent = res.message;
+            loadLogScan();
+          } else {
+            scanResult.textContent = "Error: " + (res.message || "Gagal scan");
+          }
+        }).catch(() => {
+          scanResult.textContent = "Gagal koneksi server.";
+        });
+    }
+  });
+
+  // Print Label
+  generatePrintBtn.addEventListener('click', () => {
+    const k = printKategori.value;
+    const p = printProduk.value;
+    const w = printWarna.value;
+    const s = printSize.value;
+    const q = parseInt(printQty.value) || 1;
+    if (!k || !p || !w || !s) {
+      alert("Lengkapi pilihan kategori, produk, warna, dan size.");
+      return;
+    }
+    if (q < 1 || q > 1000) {
+      alert("Jumlah label harus antara 1 sampai 1000.");
+      return;
+    }
+    const produk = dataProduk.find(d => d.kategori === k && d.produk === p && d.warna === w && d.size === s);
+    if (!produk) {
+      alert("Produk tidak ditemukan.");
+      return;
+    }
+    renderLabels(Array(q).fill(produk));
+  });
+  printLabelBtn.addEventListener('click', () => {
+    if (!hasil.children.length) {
+      alert("Tidak ada label untuk dicetak.");
+      return;
+    }
+    window.print();
+  });
+
+  // Load Dashboard dan Log Scan
+  function loadDashboard() {
+    dashboardContent.textContent = "Memuat data...";
+    fetch(API_URL + "?action=dashboard")
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          dashboardContent.textContent = json.message || "Dashboard loaded.";
+        } else {
+          dashboardContent.textContent = "Gagal memuat dashboard.";
+        }
+      });
+    loadLogScan();
+  }
+  function loadLogScan() {
+    logscan.textContent = "Memuat aktivitas terakhir...";
+    fetch(API_URL + "?action=logscan")
+      .then(res => res.json())
+      .then(json => {
+        if(json.status === "success") {
+          if(json.data.length === 0) {
+            logscan.textContent = "Belum ada aktivitas.";
+            return;
+          }
+          logscan.innerHTML = json.data.map(log => `
+            <div>
+              <strong>${log.tanggal} ${log.jam}</strong> - SKU: ${log.sku} - ${log.jenis} - Qty: ${log.qty} - Admin: ${log.admin}
+            </div>
+          `).join("");
+        } else {
+          logscan.textContent = "Gagal memuat aktivitas.";
+        }
+      });
+  }
+
+  // Inisialisasi tampilan awal
+  showSection('dashboard');
+</script>
+
+</body>
+</html>
