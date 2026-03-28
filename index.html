@@ -1,587 +1,1466 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Gudang Spalva - Aplikasi Gudang Lengkap</title>
-<style>
-  /* Reset dan dasar */
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    font-family: Arial, sans-serif;
-    margin: 16px;
-    background-color: #f6f7fb;
-    color: #111;
-  }
-  h1, h2, h3 {
-    margin-bottom: 12px;
-  }
-  label {
-    display: block;
-    margin-top: 12px;
-    margin-bottom: 4px;
-    font-weight: bold;
-  }
-  input[type=text], input[type=password], input[type=number], select, textarea {
-    width: 100%;
-    padding: 8px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    outline-offset: 2px;
-  }
-  button {
-    margin-top: 16px;
-    background-color: #111;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  button:hover, button:focus {
-    background-color: #333;
-  }
-  nav {
-    margin-top: 20px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  nav button {
-    flex: 1 1 120px;
-  }
-  #loginMsg {
-    margin-top: 8px;
-    color: red;
-  }
-  #hasil, #logscan, #finderResult, #matrixResult, #scanResult {
-    margin-top: 20px;
-    background: white;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px dashed #ccc;
-    min-height: 150px;
-    overflow-y: auto;
-    max-height: 300px;
-  }
-  .label {
-    width: 50mm;
-    height: 30mm;
-    padding: 4mm;
-    box-sizing: border-box;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-size: 12px;
-    background: white;
-    margin-bottom: 10px;
-  }
-  .label .title {
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
-  .label .sub {
-    font-size: 11px;
-    color: #666;
-    line-height: 1.2;
-  }
-  .barcode {
-    width: 100%;
-    height: 18mm;
-    object-fit: contain;
-    margin-top: 6px;
-  }
-  .qrcode {
-    width: 30mm;
-    height: 30mm;
-    object-fit: contain;
-    margin-top: 4px;
-  }
-  @media print {
-    body * {
-      visibility: hidden;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>📦 Gudang Baju App</title>
+  
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* === FUTURISTIC THEME === */
+    :root {
+      --primary: #00f5ff;
+      --secondary: #7b2cbf;
+      --accent: #ff006e;
+      --dark: #0a0e17;
+      --darker: #05070a;
+      --card: rgba(20, 30, 50, 0.8);
+      --text: #e0e6ff;
+      --text-dim: #8892b0;
+      --success: #00ff9d;
+      --warning: #ffc107;
+      --danger: #ff4757;
+      --glass: rgba(255,255,255,0.05);
+      --border: rgba(0, 245, 255, 0.3);
+      --glow: 0 0 20px rgba(0, 245, 255, 0.4);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    #hasil, #hasil * {
-      visibility: visible;
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--darker);
+      color: var(--text);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 20% 80%, rgba(123, 44, 191, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(0, 245, 255, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
     }
-    #hasil {
+    
+    @keyframes glow { 0%, 100% { box-shadow: var(--glow); } 50% { box-shadow: 0 0 40px rgba(0, 245, 255, 0.7); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes scanLine { 0% { top: -100%; } 100% { top: 100%; } }
+    
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-4 { gap: 1rem; }
+    .p-4 { padding: 1rem; }
+    .rounded { border-radius: 12px; }
+    .rounded-lg { border-radius: 20px; }
+    .text-center { text-align: center; }
+    .text-primary { color: var(--primary); }
+    .text-success { color: var(--success); }
+    .text-danger { color: var(--danger); }
+    .text-warning { color: var(--warning); }
+    .font-bold { font-weight: 700; }
+    .text-sm { font-size: 0.875rem; }
+    .text-lg { font-size: 1.25rem; }
+    .text-xl { font-size: 1.5rem; }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: var(--glow); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+    .btn-outline:hover { background: var(--primary); color: var(--dark); }
+    .btn-danger { background: linear-gradient(135deg, var(--danger), #ff6b81); }
+    .btn-success { background: linear-gradient(135deg, var(--success), #00d9a0); }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.875rem; }
+    .btn-full { width: 100%; justify-content: center; }
+    
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      backdrop-filter: blur(10px);
+      transition: var(--transition);
+    }
+    .card:hover { border-color: var(--primary); box-shadow: var(--glow); }
+    
+    .input-group { margin-bottom: 1rem; }
+    .input-group label { display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.9rem; }
+    .form-control {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.2); }
+    
+    .nav {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--glass);
+      padding: 0.25rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .nav-item {
+      flex: 1;
+      min-width: max-content;
+      padding: 0.75rem 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-item.active, .nav-item:hover { background: var(--primary); color: var(--dark); }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      text-align: center;
+      padding: 1rem;
+      background: var(--glass);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--primary); margin: 0.25rem 0; }
+    .stat-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; }
+    
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: var(--secondary); color: white; padding: 0.875rem 1rem; text-align: left; font-weight: 600; }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--glass); }
+    tr:hover { background: var(--card); }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-masuk { background: rgba(0, 255, 157, 0.2); color: var(--success); }
+    .badge-keluar { background: rgba(255, 71, 87, 0.2); color: var(--danger); }
+    .badge-low { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
+    
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid var(--primary);
+      box-shadow: var(--glow);
+      background: #000;
+    }
+    .scan-overlay { position: relative; }
+    .scan-line {
       position: absolute;
-      left: 0;
-      top: 0;
+      left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      animation: scanLine 2s linear infinite;
+      pointer-events: none;
     }
-    .label {
-      page-break-inside: avoid;
+    .scan-result {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--glass);
+      border-radius: 12px;
+      border-left: 4px solid var(--primary);
+      animation: slideIn 0.3s ease;
     }
-  }
-</style>
+    .scan-sku { font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem; font-family: monospace; }
+    .scan-details { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; font-size: 0.9rem; }
+    .scan-details dt { color: var(--text-dim); }
+    .scan-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .login-card { width: 100%; max-width: 400px; animation: slideIn 0.4s ease; }
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    .login-logo i { font-size: 3rem; color: var(--primary); animation: pulse 2s infinite; }
+    .login-logo h1 {
+      margin-top: 1rem;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .toast {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      padding: 1rem 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      border-left: 4px solid var(--primary);
+      box-shadow: var(--glow);
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+      max-width: 350px;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    .toast-header { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .toast-close { margin-left: auto; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.2rem; }
+    
+    .loading {
+      display: inline-block;
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 2px solid var(--glass);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 14, 23, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 14, 23, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+    }
+    .modal-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.3s ease;
+    }
+    .modal-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--glass);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 { margin: 0; color: var(--primary); }
+    .modal-close { background: none; border: none; color: var(--text-dim); font-size: 1.5rem; cursor: pointer; }
+    .modal-body { padding: 1rem 1.5rem; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--glass);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    
+    #label-preview {
+      width: 50mm;
+      height: 30mm;
+      border: 2px dashed var(--primary);
+      border-radius: 4px;
+      padding: 3mm;
+      background: white;
+      color: black;
+      font-size: 8pt;
+      margin: 1rem auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    #label-preview .label-sku { font-weight: 700; font-size: 9pt; font-family: monospace; border-bottom: 1px solid #ccc; padding-bottom: 2pt; }
+    #label-preview .label-name { font-size: 7pt; line-height: 1.2; flex: 1; display: flex; align-items: center; }
+    #label-preview .label-qr { display: flex; justify-content: center; align-items: center; }
+    #label-preview .label-qr img, #label-preview .label-qr canvas { width: 18mm !important; height: 18mm !important; }
+    
+    @media print {
+      body * { visibility: hidden; }
+      #label-preview, #label-preview * { visibility: visible; position: absolute; left: 0; top: 0; margin: 0; border: none; box-shadow: none; background: white; color: black; }
+      #label-preview { width: 50mm; height: 30mm; page-break-after: always; }
+      .no-print { display: none !important; }
+    }
+    
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .scan-actions { flex-direction: column; }
+    }
+    
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: var(--glass);
+      border-radius: 10px;
+      border-left: 3px solid var(--border);
+      margin-bottom: 0.5rem;
+    }
+    .session-item.current { border-left-color: var(--success); background: rgba(0, 255, 157, 0.1); }
+    .session-device { font-weight: 600; margin-bottom: 0.25rem; }
+    .session-meta { font-size: 0.75rem; color: var(--text-dim); }
+  </style>
 </head>
 <body>
-
-<h1>Gudang Spalva</h1>
-
-<!-- Login Section -->
-<div id="loginSection">
-  <h2>Login</h2>
-  <label for="username">Username</label>
-  <input type="text" id="username" autocomplete="username" />
-  <label for="password">Password</label>
-  <input type="password" id="password" autocomplete="current-password" />
-  <button id="loginBtn">Login</button>
-  <div id="loginMsg" role="alert"></div>
-</div>
-
-<!-- Main App Section -->
-<div id="appSection" style="display:none;">
-  <nav aria-label="Main navigation">
-    <button id="navDashboard" aria-controls="dashboardSection" aria-selected="true">Dashboard</button>
-    <button id="navFinder" aria-controls="finderSection" aria-selected="false">Finder</button>
-    <button id="navMatrix" aria-controls="matrixSection" aria-selected="false">Matrix</button>
-    <button id="navScan" aria-controls="scanSection" aria-selected="false">Scan</button>
-    <button id="navPrint" aria-controls="printSection" aria-selected="false">Print Label</button>
-    <button id="logoutBtn" style="background:#b33;">Logout</button>
-  </nav>
-
-  <!-- Dashboard -->
-  <section id="dashboardSection" tabindex="0" style="display:block;">
-    <h2>Dashboard</h2>
-    <div id="dashboardContent">Memuat data...</div>
-    <h3>Aktivitas Terakhir</h3>
-    <div id="logscan" aria-live="polite"></div>
-  </section>
-
-  <!-- Finder -->
-  <section id="finderSection" tabindex="0" style="display:none;">
-    <h2>Finder</h2>
-    <label for="finderKategori">Kategori</label>
-    <select id="finderKategori"></select>
-    <label for="finderProduk">Produk</label>
-    <select id="finderProduk"></select>
-    <label for="finderWarna">Warna</label>
-    <select id="finderWarna"></select>
-    <label for="finderSize">Size</label>
-    <select id="finderSize"></select>
-    <button id="finderSearchBtn">Cari</button>
-    <div id="finderResult" aria-live="polite"></div>
-  </section>
-
-  <!-- Matrix -->
-  <section id="matrixSection" tabindex="0" style="display:none;">
-    <h2>Matrix</h2>
-    <button id="matrixLoadBtn">Load Matrix</button>
-    <pre id="matrixResult"></pre>
-  </section>
-
-  <!-- Scan -->
-  <section id="scanSection" tabindex="0" style="display:none;">
-    <h2>Scan Barang</h2>
-    <button id="scanMasukBtn" style="background:#0a8;">Scan Masuk</button>
-    <button id="scanKeluarBtn" style="background:#c33;">Scan Keluar</button>
-    <button id="stopScanBtn">Stop Scan</button>
-    <button id="clearScanBtn">Bersihkan</button>
-    <textarea id="scanArea" rows="5" placeholder="Scan barcode lalu tekan Enter"></textarea>
-    <div id="scanResult" aria-live="polite">Belum ada hasil.</div>
-  </section>
-
-  <!-- Print Label -->
-  <section id="printSection" tabindex="0" style="display:none;">
-    <h2>Print Label</h2>
-    <label for="printKategori">Kategori</label>
-    <select id="printKategori"></select>
-    <label for="printProduk">Produk</label>
-    <select id="printProduk"></select>
-    <label for="printWarna">Warna</label>
-    <select id="printWarna"></select>
-    <label for="printSize">Size</label>
-    <select id="printSize"></select>
-    <label for="printQty">Jumlah Label</label>
-    <input type="number" id="printQty" min="1" max="1000" value="1" />
-    <button id="generatePrintBtn">Generate Label</button>
-    <button id="printLabelBtn">Print</button>
-    <div id="hasil" aria-live="polite"></div>
-  </section>
-</div>
-
-<script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbweMfOJGQRFCWxph9tq-jhgjnI7slOWDN5EED0NMwI4Cc2ZE59etkTNJsjYpgxcPjB_/exec"; // Ganti dengan URL Web App GAS Anda
-
-  // Elemen DOM
-  const loginSection = document.getElementById('loginSection');
-  const appSection = document.getElementById('appSection');
-  const loginBtn = document.getElementById('loginBtn');
-  const loginMsg = document.getElementById('loginMsg');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  const navButtons = [...document.querySelectorAll('nav button:not(#logoutBtn)')];
-  const sections = {
-    dashboard: document.getElementById('dashboardSection'),
-    finder: document.getElementById('finderSection'),
-    matrix: document.getElementById('matrixSection'),
-    scan: document.getElementById('scanSection'),
-    print: document.getElementById('printSection')
-  };
-
-  // Dropdown finder
-  const finderKategori = document.getElementById('finderKategori');
-  const finderProduk = document.getElementById('finderProduk');
-  const finderWarna = document.getElementById('finderWarna');
-  const finderSize = document.getElementById('finderSize');
-  const finderSearchBtn = document.getElementById('finderSearchBtn');
-  const finderResult = document.getElementById('finderResult');
-
-  // Dropdown print
-  const printKategori = document.getElementById('printKategori');
-  const printProduk = document.getElementById('printProduk');
-  const printWarna = document.getElementById('printWarna');
-  const printSize = document.getElementById('printSize');
-  const printQty = document.getElementById('printQty');
-  const generatePrintBtn = document.getElementById('generatePrintBtn');
-  const printLabelBtn = document.getElementById('printLabelBtn');
-  const hasil = document.getElementById('hasil');
-
-  // Dashboard
-  const dashboardContent = document.getElementById('dashboardContent');
-  const logscan = document.getElementById('logscan');
-
-  // Scan
-  const scanMasukBtn = document.getElementById('scanMasukBtn');
-  const scanKeluarBtn = document.getElementById('scanKeluarBtn');
-  const stopScanBtn = document.getElementById('stopScanBtn');
-  const clearScanBtn = document.getElementById('clearScanBtn');
-  const scanArea = document.getElementById('scanArea');
-  const scanResult = document.getElementById('scanResult');
-
-  let dataProduk = [];
-  let scanning = false;
-  let scanType = null;
-
-  // Utility functions
-  function esc(s) {
-    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-  function fillSelect(sel, arr) {
-    sel.innerHTML = '<option value="">Pilih</option>';
-    arr.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = v;
-      sel.appendChild(opt);
-    });
-  }
-  function unique(arr, key) {
-    return [...new Set(arr.map(x => x[key]).filter(Boolean))];
-  }
-  function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-  function filterData(filter) {
-    return dataProduk.filter(p => {
-      return (!filter.kategori || p.kategori === filter.kategori) &&
-             (!filter.produk || p.produk === filter.produk) &&
-             (!filter.warna || p.warna === filter.warna) &&
-             (!filter.size || p.size === filter.size);
-    });
-  }
-  function createLabelHtml(d) {
-    const barcodeUrl = 'https://bwipjs-api.metafloor.com/?bcid=code128&scale=3&height=22&includetext=false&text=' + encodeURIComponent(d.sku);
-    const qrCodeUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=100x100&chl=' + encodeURIComponent(d.sku);
-    return `
-      <div class="label" role="article" aria-label="Label ${esc(d.sku)}">
-        <div>
-          <div class="title">${esc(d.kategori)}</div>
-          <div class="sub">${esc(d.produk)}</div>
-          <div class="sub">${esc(d.warna)} - ${esc(d.size)}</div>
-          <div class="sub">${esc(d.sku)}</div>
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="loading" style="width: 3rem; height: 3rem;"></div>
+    <div>Memproses...</div>
+  </div>
+  
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+  
+  <!-- Login Page -->
+  <div id="login-page" class="login-container">
+    <div class="card login-card">
+      <div class="login-logo">
+        <i class="fas fa-warehouse"></i>
+        <h1>GUDANG BAJU</h1>
+        <p class="text-sm" style="color: var(--text-dim);">Sistem Manajemen Stok</p>
+      </div>
+      
+      <form id="login-form">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" class="form-control" placeholder="Masukkan username" required autocomplete="username">
         </div>
-        <img class="barcode" src="${barcodeUrl}" alt="Barcode ${esc(d.sku)}">
-        <img class="qrcode" src="${qrCodeUrl}" alt="QR Code ${esc(d.sku)}">
-      </div>`;
-  }
-  function renderLabels(arr) {
-    hasil.innerHTML = '';
-    const frag = document.createDocumentFragment();
-    arr.forEach(d => {
-      const wrapper = document.createElement('div');
-      wrapper.innerHTML = createLabelHtml(d);
-      frag.appendChild(wrapper.firstElementChild);
-    });
-    hasil.appendChild(frag);
-    hasil.focus();
-  }
-
-  // Navigation
-  function showSection(name) {
-    Object.entries(sections).forEach(([key, section]) => {
-      section.style.display = (key === name) ? 'block' : 'none';
-      navButtons.find(btn => btn.id === 'nav' + capitalize(key))?.setAttribute('aria-selected', key === name);
-    });
-  }
-  navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const name = btn.id.replace('nav', '').toLowerCase();
-      showSection(name);
-    });
-  });
-  logoutBtn.addEventListener('click', () => {
-    appSection.style.display = 'none';
-    loginSection.style.display = 'block';
-    loginMsg.textContent = '';
-    clearLoginInputs();
-  });
-  function clearLoginInputs() {
-    document.getElementById('username').value = '';
-    document.getElementById('password').value = '';
-  }
-
-  // Login
-  loginBtn.addEventListener('click', () => {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-    if (!username || !password) {
-      loginMsg.textContent = "Username dan password wajib diisi.";
-      return;
-    }
-    loginMsg.textContent = "Memproses...";
-    fetch(API_URL, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({action:"login", username, password})
-    })
-    .then(res => res.json())
-    .then(res => {
-      if (res.status === "success") {
-        loginSection.style.display = 'none';
-        appSection.style.display = 'block';
-        loginMsg.textContent = '';
-        showSection('dashboard');
-        loadDashboard();
-        loadProduk();
-      } else {
-        loginMsg.textContent = res.message || "Login gagal";
-      }
-    })
-    .catch(() => {
-      loginMsg.textContent = "Gagal koneksi ke server.";
-    });
-  });
-
-  // Load Produk untuk dropdown finder & print
-  function loadProduk() {
-    fetch(API_URL + "?action=getProducts")
-      .then(res => res.json())
-      .then(json => {
-        dataProduk = json.filter(p => p.sku);
-        fillSelect(printKategori, unique(dataProduk, 'kategori'));
-        fillSelect(finderKategori, unique(dataProduk, 'kategori'));
-      });
-  }
-
-  // Update dropdown finder berantai
-  finderKategori.addEventListener('change', () => {
-    const k = finderKategori.value;
-    fillSelect(finderProduk, k ? unique(dataProduk.filter(p => p.kategori === k), 'produk') : []);
-    fillSelect(finderWarna, []);
-    fillSelect(finderSize, []);
-  });
-  finderProduk.addEventListener('change', () => {
-    const k = finderKategori.value;
-    const p = finderProduk.value;
-    fillSelect(finderWarna, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p)).map(pdt => pdt.warna));
-    fillSelect(finderSize, []);
-  });
-  finderWarna.addEventListener('change', () => {
-    const k = finderKategori.value;
-    const p = finderProduk.value;
-    const w = finderWarna.value;
-    fillSelect(finderSize, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p) && (!w || pdt.warna === w)).map(pdt => pdt.size));
-  });
-
-  // Update dropdown print berantai
-  printKategori.addEventListener('change', () => {
-    const k = printKategori.value;
-    fillSelect(printProduk, k ? unique(dataProduk.filter(p => p.kategori === k), 'produk') : []);
-    fillSelect(printWarna, []);
-    fillSelect(printSize, []);
-  });
-  printProduk.addEventListener('change', () => {
-    const k = printKategori.value;
-    const p = printProduk.value;
-    fillSelect(printWarna, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p)).map(pdt => pdt.warna));
-    fillSelect(printSize, []);
-  });
-  printWarna.addEventListener('change', () => {
-    const k = printKategori.value;
-    const p = printProduk.value;
-    const w = printWarna.value;
-    fillSelect(printSize, dataProduk.filter(pdt => (!k || pdt.kategori === k) && (!p || pdt.produk === p) && (!w || pdt.warna === w)).map(pdt => pdt.size));
-  });
-
-  // Finder Search
-  finderSearchBtn.addEventListener('click', () => {
-    const filter = {
-      kategori: finderKategori.value,
-      produk: finderProduk.value,
-      warna: finderWarna.value,
-      size: finderSize.value
-    };
-    finderResult.textContent = "Mencari...";
-    const params = new URLSearchParams(filter);
-    fetch(API_URL + "?action=finder&" + params.toString())
-      .then(res => res.json())
-      .then(json => {
-        if(json.status === "success") {
-          if(json.data.length === 0) {
-            finderResult.textContent = "Data tidak ditemukan.";
-            return;
-          }
-          finderResult.innerHTML = json.data.map(d => `
-            <div>
-              <strong>${d.sku}</strong> - ${d.kategori} ${d.produk} ${d.warna} ${d.size} - Stok: ${d.stokakhir} - Lokasi: ${d.lokasi}
+        
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Masukkan password" required autocomplete="current-password">
+        </div>
+        
+        <button type="submit" class="btn btn-lg btn-full" style="margin-top: 1rem;">
+          <i class="fas fa-sign-in-alt"></i> MASUK
+        </button>
+      </form>
+      
+      <p class="text-center text-sm" style="margin-top: 1.5rem; color: var(--text-dim);">
+        <i class="fas fa-shield-alt"></i> Terenkripsi & Aman
+      </p>
+    </div>
+  </div>
+  
+  <!-- Main App -->
+  <div id="app-page" class="hidden">
+    <!-- Header -->
+    <header class="p-4" style="background: var(--glass); border-bottom: 1px solid var(--border);">
+      <div class="flex justify-between items-center" style="max-width: 1200px; margin: 0 auto;">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-warehouse text-primary text-xl"></i>
+          <span class="font-bold text-lg">GUDANG BAJU</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <span id="user-info" class="text-sm"></span>
+          <button id="session-btn" class="btn btn-sm btn-outline" title="Kelola Device">
+            <i class="fas fa-devices"></i>
+          </button>
+          <button id="logout-btn" class="btn btn-sm btn-outline">
+            <i class="fas fa-sign-out-alt"></i> Keluar
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="p-4" style="max-width: 1200px; margin: 0 auto;">
+      <!-- Navigation -->
+      <nav class="nav">
+        <button class="nav-item active" data-tab="dashboard">
+          <i class="fas fa-home"></i> Dashboard
+        </button>
+        <button class="nav-item" data-tab="finder">
+          <i class="fas fa-search"></i> Finder
+        </button>
+        <button class="nav-item" data-tab="matrix">
+          <i class="fas fa-th"></i> Matrix
+        </button>
+        <button class="nav-item" data-tab="scan-in">
+          <i class="fas fa-arrow-down text-success"></i> Scan Masuk
+        </button>
+        <button class="nav-item" data-tab="scan-out">
+          <i class="fas fa-arrow-up text-danger"></i> Scan Keluar
+        </button>
+        <button class="nav-item" data-tab="print">
+          <i class="fas fa-print"></i> Print Label
+        </button>
+      </nav>
+      
+      <!-- TAB: Dashboard -->
+      <section id="tab-dashboard" class="tab-content">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Stok</div>
+            <div class="stat-value" id="stat-total">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Masuk Hari Ini</div>
+            <div class="stat-value text-success" id="stat-masuk">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Keluar Hari Ini</div>
+            <div class="stat-value text-danger" id="stat-keluar">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Stok Menipis</div>
+            <div class="stat-value text-warning" id="stat-menipis">0</div>
+          </div>
+        </div>
+        
+        <div class="flex" style="gap: 1rem; flex-wrap: wrap;">
+          <div class="card" style="flex: 2; min-width: 300px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+              <span class="card-title" style="color: var(--primary);">📊 Stok per Kategori</span>
             </div>
-          `).join("");
-        } else {
-          finderResult.textContent = "Gagal mencari data.";
-        }
-      });
-  });
-
-  // Matrix Load
-  const matrixLoadBtn = document.getElementById('matrixLoadBtn');
-  const matrixResult = document.getElementById('matrixResult');
-  matrixLoadBtn.addEventListener('click', () => {
-    matrixResult.textContent = "Memuat matrix...";
-    fetch(API_URL + "?action=matrix")
-      .then(res => res.json())
-      .then(json => {
-        if(json.status === "success") {
-          matrixResult.textContent = JSON.stringify(json.data, null, 2);
-        } else {
-          matrixResult.textContent = "Gagal memuat matrix.";
-        }
-      });
-  });
-
-  // Scan Barang
-  scanMasukBtn.addEventListener('click', () => {
-    scanning = true;
-    scanType = "MASUK";
-    scanResult.textContent = "Mode scan MASUK aktif. Scan barcode...";
-    scanArea.focus();
-  });
-  scanKeluarBtn.addEventListener('click', () => {
-    scanning = true;
-    scanType = "KELUAR";
-    scanResult.textContent = "Mode scan KELUAR aktif. Scan barcode...";
-    scanArea.focus();
-  });
-  stopScanBtn.addEventListener('click', () => {
-    scanning = false;
-    scanType = null;
-    scanResult.textContent = "Scan dihentikan.";
-  });
-  clearScanBtn.addEventListener('click', () => {
-    scanArea.value = "";
-    scanResult.textContent = "Belum ada hasil.";
-  });
-  scanArea.addEventListener('keydown', e => {
-    if (!scanning) return;
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const sku = scanArea.value.trim();
-      if (!sku) return;
-      scanArea.value = "";
-      fetch(API_URL, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({action:"scan", sku: sku, tipe: scanType, admin: "admin1"})
-      }).then(res => res.json())
-        .then(res => {
-          if(res.status === "success") {
-            scanResult.textContent = res.message;
-            loadLogScan();
-          } else {
-            scanResult.textContent = "Error: " + (res.message || "Gagal scan");
-          }
-        }).catch(() => {
-          scanResult.textContent = "Gagal koneksi server.";
+            <div id="kategori-chart"></div>
+          </div>
+          
+          <div class="card" style="flex: 1; min-width: 250px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+              <span class="card-title" style="color: var(--primary);">⚠️ Stok Menipis</span>
+            </div>
+            <div id="low-stock-list" style="max-height: 300px; overflow-y: auto;"></div>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-top: 1rem;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span class="card-title" style="color: var(--primary);">📋 Aktivitas Terbaru</span>
+            <button class="btn btn-sm btn-outline" onclick="refreshDashboard()">
+              <i class="fas fa-sync"></i> Refresh
+            </button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Jam</th>
+                  <th>SKU</th>
+                  <th>Jenis</th>
+                  <th>Qty</th>
+                  <th>Admin</th>
+                </tr>
+              </thead>
+              <tbody id="activity-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- TAB: Finder -->
+      <section id="tab-finder" class="tab-content hidden">
+        <div class="card">
+          <div class="card-header" style="margin-bottom: 1rem;">
+            <span class="card-title" style="color: var(--primary);">🔍 Cari Produk</span>
+          </div>
+          
+          <div class="flex" style="gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Kategori</label>
+                <select id="filter-kategori" class="form-control">
+                  <option value="">Semua</option>
+                </select>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Produk</label>
+                <select id="filter-produk" class="form-control">
+                  <option value="">Semua</option>
+                </select>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Warna</label>
+                <select id="filter-warna" class="form-control">
+                  <option value="">Semua</option>
+                </select>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Size</label>
+                <select id="filter-size" class="form-control">
+                  <option value="">Semua</option>
+                  <option>XS</option><option>S</option><option>M</option>
+                  <option>L</option><option>XL</option><option>XXL</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex gap-2" style="margin-bottom: 1rem;">
+            <button class="btn" onclick="applyFilters()">
+              <i class="fas fa-search"></i> Cari
+            </button>
+            <button class="btn btn-outline" onclick="resetFilters()">
+              <i class="fas fa-undo"></i> Reset
+            </button>
+            <span id="result-count" class="text-sm" style="color: var(--text-dim); align-self: center;"></span>
+          </div>
+          
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Kategori</th>
+                  <th>Produk</th>
+                  <th>Warna</th>
+                  <th>Size</th>
+                  <th>Stok</th>
+                  <th>Lokasi</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="finder-results"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- TAB: Matrix -->
+      <section id="tab-matrix" class="tab-content hidden">
+        <div class="card">
+          <div class="card-header" style="margin-bottom: 1rem;">
+            <span class="card-title" style="color: var(--primary);">📐 Matrix Stok</span>
+          </div>
+          
+          <div class="flex" style="gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Kategori</label>
+                <select id="matrix-kategori" class="form-control">
+                  <option value="">Semua</option>
+                </select>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Produk</label>
+                <select id="matrix-produk" class="form-control">
+                  <option value="">Semua</option>
+                </select>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Warna</label>
+                <select id="matrix-warna" class="form-control">
+                  <option value="">Semua</option>
+                </select>
+              </div>
+            </div>
+            <div style="align-self: flex-end;">
+              <button class="btn" onclick="loadMatrix()">
+                <i class="fas fa-sync"></i> Load
+              </button>
+            </div>
+          </div>
+          
+          <div style="overflow-x: auto;">
+            <table class="matrix-table" id="matrix-table" style="width: 100%; border-collapse: collapse; min-width: 800px;">
+            </table>
+          </div>
+          
+          <p class="text-sm" style="margin-top: 1rem; color: var(--text-dim);">
+            <i class="fas fa-info-circle"></i> 
+            Klik cell untuk scan cepat • 
+            <span class="badge badge-low">Kuning</span> = Stok &lt; 10 • 
+            <span class="badge badge-keluar">Merah</span> = Kosong
+          </p>
+        </div>
+      </section>
+      
+      <!-- TAB: Scan Masuk -->
+      <section id="tab-scan-in" class="tab-content hidden">
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span class="card-title" style="color: var(--primary);">📥 Scan Barang MASUK</span>
+            <span class="badge badge-masuk">INCOMING</span>
+          </div>
+          
+          <div class="text-center">
+            <div class="scan-overlay">
+              <div id="reader-in"></div>
+              <div class="scan-line"></div>
+            </div>
+            
+            <div class="scan-actions" style="justify-content: center; margin-top: 1rem;">
+              <button class="btn btn-success" id="start-scan-in">
+                <i class="fas fa-camera"></i> Mulai Scan
+              </button>
+              <button class="btn btn-outline" id="stop-scan-in" disabled>
+                <i class="fas fa-stop"></i> Stop
+              </button>
+            </div>
+          </div>
+          
+          <div id="scan-result-in" class="scan-result hidden">
+            <div class="scan-sku" id="scan-sku-in">-</div>
+            <dl class="scan-details">
+              <dt>Produk:</dt><dd id="scan-nama-in">-</dd>
+              <dt>Kategori:</dt><dd id="scan-kat-in">-</dd>
+              <dt>Warna:</dt><dd id="scan-warna-in">-</dd>
+              <dt>Size:</dt><dd id="scan-size-in">-</dd>
+              <dt>Stok Saat Ini:</dt><dd id="scan-stok-in">-</dd>
+            </dl>
+            
+            <div class="flex gap-2" style="margin-top: 1rem; flex-wrap: wrap;">
+              <input type="number" id="scan-qty-in" class="form-control" value="1" min="1" max="999" style="width: 100px;">
+              <button class="btn btn-success" onclick="confirmScan('MASUK')">
+                <i class="fas fa-check"></i> Konfirmasi (+)
+              </button>
+              <button class="btn btn-outline" onclick="clearScan('in')">
+                <i class="fas fa-times"></i> Batal
+              </button>
+            </div>
+          </div>
+          
+          <p class="text-sm" style="margin-top: 1rem; color: var(--text-dim);">
+            <i class="fas fa-lightbulb"></i> 
+            Arahkan kamera ke barcode/QR • 
+            Suara beep otomatis saat terdeteksi • 
+            Data ditampilkan untuk konfirmasi
+          </p>
+        </div>
+      </section>
+      
+      <!-- TAB: Scan Keluar -->
+      <section id="tab-scan-out" class="tab-content hidden">
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span class="card-title" style="color: var(--primary);">📤 Scan Barang KELUAR</span>
+            <span class="badge badge-keluar">OUTGOING</span>
+          </div>
+          
+          <div class="text-center">
+            <div class="scan-overlay">
+              <div id="reader-out"></div>
+              <div class="scan-line"></div>
+            </div>
+            
+            <div class="scan-actions" style="justify-content: center; margin-top: 1rem;">
+              <button class="btn btn-success" id="start-scan-out">
+                <i class="fas fa-camera"></i> Mulai Scan
+              </button>
+              <button class="btn btn-outline" id="stop-scan-out" disabled>
+                <i class="fas fa-stop"></i> Stop
+              </button>
+            </div>
+          </div>
+          
+          <div id="scan-result-out" class="scan-result hidden">
+            <div class="scan-sku" id="scan-sku-out">-</div>
+            <dl class="scan-details">
+              <dt>Produk:</dt><dd id="scan-nama-out">-</dd>
+              <dt>Kategori:</dt><dd id="scan-kat-out">-</dd>
+              <dt>Warna:</dt><dd id="scan-warna-out">-</dd>
+              <dt>Size:</dt><dd id="scan-size-out">-</dd>
+              <dt>Stok Saat Ini:</dt><dd id="scan-stok-out">-</dd>
+            </dl>
+            
+            <div class="flex gap-2" style="margin-top: 1rem; flex-wrap: wrap;">
+              <input type="number" id="scan-qty-out" class="form-control" value="1" min="1" max="999" style="width: 100px;">
+              <button class="btn btn-danger" onclick="confirmScan('KELUAR')">
+                <i class="fas fa-check"></i> Konfirmasi (-)
+              </button>
+              <button class="btn btn-outline" onclick="clearScan('out')">
+                <i class="fas fa-times"></i> Batal
+              </button>
+            </div>
+          </div>
+          
+          <p class="text-sm" style="margin-top: 1rem; color: var(--text-dim);">
+            <i class="fas fa-lightbulb"></i> 
+            Pastikan stok mencukupi sebelum scan keluar • 
+            Transaksi tercatat otomatis
+          </p>
+        </div>
+      </section>
+      
+      <!-- TAB: Print Label -->
+      <section id="tab-print" class="tab-content hidden">
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span class="card-title" style="color: var(--primary);">🏷️ Print Label Produk</span>
+            <span class="text-sm" style="color: var(--text-dim);">50×30mm</span>
+          </div>
+          
+          <div class="flex" style="gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            <div style="flex: 1; min-width: 200px;">
+              <div class="input-group">
+                <label>Cari SKU / Produk</label>
+                <input type="text" id="label-search" class="form-control" placeholder="Ketik SKU atau nama produk...">
+              </div>
+            </div>
+            <div style="align-self: flex-end;">
+              <button class="btn" onclick="searchLabels()">
+                <i class="fas fa-search"></i> Cari
+              </button>
+            </div>
+          </div>
+          
+          <div class="flex" style="gap: 2rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Produk</th>
+                      <th>Warna</th>
+                      <th>Size</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="label-list"></tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div style="flex: 1; min-width: 200px; text-align: center;">
+              <p class="text-sm" style="margin-bottom: 0.5rem; color: var(--text-dim);">Preview Label</p>
+              <div id="label-preview">
+                <div class="label-sku" id="lbl-sku">SKU-XXX</div>
+                <div class="label-name" id="lbl-nama">Nama Produk Lengkap</div>
+                <div class="label-qr" id="lbl-qr"></div>
+              </div>
+              <button class="btn btn-full" onclick="printLabel()" style="margin-top: 1rem;">
+                <i class="fas fa-print"></i> PRINT LABEL
+              </button>
+              <p class="text-sm" style="margin-top: 0.5rem; color: var(--text-dim);">
+                <i class="fas fa-info-circle"></i> Pastikan printer label 50x30mm terpasang
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- JavaScript -->
+  <script>
+    // === KONFIGURASI ===
+    // ⚠️ GANTI DENGAN WEB APP URL ANDA DARI GOOGLE APPS SCRIPT
+    const API = 'https://script.google.com/macros/s/AKfycbwHpB2xPAYS2ActOq6Oz_I-no94kDP1PHZDhO2qopRE1wVnx54mU9mu8K3lygJIy6zp/exec';
+    const CFG = { SESSION_TTL: 86400000 };
+    
+    // === STATE ===
+    const S = { user: null, token: null, devId: null, scanners: {}, filters: {}, timers: {}, curSku: null };
+    
+    // === API CALL ===
+    async function api(act, p = {}) {
+      showLoading(true);
+      console.log('API Call:', act, p);
+      try {
+        const r = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: act, ...p, token: S.token })
         });
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        const data = await r.json();
+        console.log('API Response:', data);
+        return data;
+      } catch (e) {
+        console.error('API Error:', e);
+        toast('error', 'Koneksi Error', e.message);
+        throw e;
+      } finally {
+        showLoading(false);
+      }
     }
-  });
-
-  // Print Label
-  generatePrintBtn.addEventListener('click', () => {
-    const k = printKategori.value;
-    const p = printProduk.value;
-    const w = printWarna.value;
-    const s = printSize.value;
-    const q = parseInt(printQty.value) || 1;
-    if (!k || !p || !w || !s) {
-      alert("Lengkapi pilihan kategori, produk, warna, dan size.");
-      return;
-    }
-    if (q < 1 || q > 1000) {
-      alert("Jumlah label harus antara 1 sampai 1000.");
-      return;
-    }
-    const produk = dataProduk.find(d => d.kategori === k && d.produk === p && d.warna === w && d.size === s);
-    if (!produk) {
-      alert("Produk tidak ditemukan.");
-      return;
-    }
-    renderLabels(Array(q).fill(produk));
-  });
-  printLabelBtn.addEventListener('click', () => {
-    if (!hasil.children.length) {
-      alert("Tidak ada label untuk dicetak.");
-      return;
-    }
-    window.print();
-  });
-
-  // Load Dashboard dan Log Scan
-  function loadDashboard() {
-    dashboardContent.textContent = "Memuat data...";
-    fetch(API_URL + "?action=dashboard")
-      .then(res => res.json())
-      .then(json => {
-        if(json.status === "success") {
-          dashboardContent.textContent = json.message || "Dashboard loaded.";
-        } else {
-          dashboardContent.textContent = "Gagal memuat dashboard.";
-        }
-      });
-    loadLogScan();
-  }
-  function loadLogScan() {
-    logscan.textContent = "Memuat aktivitas terakhir...";
-    fetch(API_URL + "?action=logscan")
-      .then(res => res.json())
-      .then(json => {
-        if(json.status === "success") {
-          if(json.data.length === 0) {
-            logscan.textContent = "Belum ada aktivitas.";
-            return;
+    
+    // === AUTH SYSTEM ===
+    const Auth = {
+      getDevId() {
+        if (S.devId) return S.devId;
+        let d = localStorage.getItem('gb_dev');
+        if (!d) {
+          const fp = [navigator.userAgent, navigator.platform, screen.width + 'x' + screen.height].join('|');
+          let h = 0;
+          for (let i = 0; i < fp.length; i++) {
+            h = ((h << 5) - h) + fp.charCodeAt(i);
+            h |= 0;
           }
-          logscan.innerHTML = json.data.map(log => `
-            <div>
-              <strong>${log.tanggal} ${log.jam}</strong> - SKU: ${log.sku} - ${log.jenis} - Qty: ${log.qty} - Admin: ${log.admin}
-            </div>
-          `).join("");
+          d = 'dev_' + Math.abs(h).toString(36);
+          localStorage.setItem('gb_dev', d);
+        }
+        S.devId = d;
+        return d;
+      },
+      
+      getDevInfo() {
+        return {
+          deviceId: this.getDevId(),
+          ua: navigator.userAgent,
+          platform: navigator.platform,
+          screen: screen.width + 'x' + screen.height
+        };
+      },
+      
+      async login(u, p) {
+        const di = this.getDevInfo();
+        const r = await api('login', { username: u, password: p, deviceInfo: di });
+        if (r.success) {
+          S.user = r.user;
+          S.token = r.token;
+          S.devId = r.deviceId;
+          localStorage.setItem('gb_auth', JSON.stringify({
+            user: r.user, token: r.token, devId: r.deviceId, exp: Date.now() + r.expiresIn
+          }));
+          return true;
+        }
+        return false;
+      },
+      
+      async validate() {
+        const sv = localStorage.getItem('gb_auth');
+        if (!sv) return false;
+        try {
+          const d = JSON.parse(sv);
+          if (Date.now() > d.exp) { this.logout(); return false; }
+          const r = await api('validate', { token: d.token, deviceId: d.devId });
+          if (r.valid) {
+            S.user = d.user; S.token = d.token; S.devId = d.devId;
+            return true;
+          }
+        } catch (e) { console.error('Validate error:', e); }
+        this.logout();
+        return false;
+      },
+      
+      async logout(all = false) {
+        if (S.token && S.devId) {
+          await api(all ? 'logout_all' : 'logout', {
+            username: S.user?.username, deviceId: S.devId, token: S.token
+          });
+        }
+        localStorage.removeItem('gb_auth');
+        S.user = null; S.token = null; S.devId = null;
+        location.reload();
+      },
+      
+      can(p) { return S.user?.perms?.includes(p) || false; }
+    };
+    
+    // === LOGIN FORM ===
+    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value;
+      const btn = e.target.querySelector('button[type="submit"]');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Memproses...';
+      
+      try {
+        if (await Auth.login(u, p)) {
+          toast('success', 'Login Berhasil', `Selamat datang, ${S.user.nama}!`);
+          document.getElementById('login-page').classList.add('hidden');
+          document.getElementById('app-page').classList.remove('hidden');
+          updateUI();
+          await initApp();
         } else {
-          logscan.textContent = "Gagal memuat aktivitas.";
+          toast('error', 'Login Gagal', 'Username/password salah atau akun tidak aktif');
+        }
+      } catch (err) {
+        toast('error', 'Error', 'Gagal terhubung ke server');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> MASUK';
+      }
+    });
+    
+    // === UI UPDATE ===
+    function updateUI() {
+      if (!S.user) return;
+      document.getElementById('user-info').innerHTML = `
+        <span class="flex items-center gap-2">
+          <i class="fas fa-user-circle text-primary"></i>
+          <span>${S.user.nama}</span>
+          <span class="badge" style="background: var(--glass); font-size: 0.7rem;">${S.user.role}</span>
+        </span>
+      `;
+      
+      // Hide features based on permissions
+      if (!Auth.can('print')) document.querySelector('[data-tab="print"]')?.classList.add('hidden');
+      if (!Auth.can('scan_in') && !Auth.can('scan_out')) {
+        document.querySelector('[data-tab="scan-in"]')?.classList.add('hidden');
+        document.querySelector('[data-tab="scan-out"]')?.classList.add('hidden');
+      }
+    }
+    
+    // === TAB NAVIGATION ===
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+        
+        if (btn.dataset.tab === 'scan-in') initScanner('in');
+        if (btn.dataset.tab === 'scan-out') initScanner('out');
+      });
+    });
+    
+    // === DASHBOARD ===
+    async function refreshDashboard() {
+      if (!S.user) return;
+      const d = await api('dashboard', { username: S.user.username });
+      
+      document.getElementById('stat-total').textContent = d.total?.toLocaleString('id-ID') || '-';
+      document.getElementById('stat-masuk').textContent = d.pergerakan?.masuk?.toLocaleString('id-ID') || '0';
+      document.getElementById('stat-keluar').textContent = d.pergerakan?.keluar?.toLocaleString('id-ID') || '0';
+      document.getElementById('stat-menipis').textContent = d.low?.length || '0';
+      
+      // Kategori chart
+      const ch = document.getElementById('kategori-chart');
+      if (ch && d.byKat) {
+        const mx = Math.max(...Object.values(d.byKat));
+        ch.innerHTML = Object.entries(d.byKat).map(([k, v]) => `
+          <div style="margin: 0.5rem 0;">
+            <div class="flex justify-between text-sm">
+              <span>${k}</span>
+              <span class="font-bold">${v.toLocaleString('id-ID')}</span>
+            </div>
+            <div style="height: 8px; background: var(--glass); border-radius: 4px; margin-top: 0.25rem; overflow: hidden;">
+              <div style="height: 100%; width: ${(v/mx)*100}%; background: linear-gradient(90deg, var(--secondary), var(--primary)); border-radius: 4px;"></div>
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      // Low stock list
+      const ll = document.getElementById('low-stock-list');
+      if (ll) {
+        ll.innerHTML = d.low?.length ? d.low.map(i => `
+          <div class="flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid var(--glass);">
+            <div>
+              <div class="font-bold text-sm">${i.produk}</div>
+              <div class="text-sm" style="color: var(--text-dim);">${i.warna} - ${i.size}</div>
+            </div>
+            <span class="badge badge-low">${i.stok}</span>
+          </div>
+        `).join('') : '<p class="text-center text-sm" style="padding: 1rem; color: var(--text-dim);">✅ Semua stok aman</p>';
+      }
+      
+      // Activity table
+      const at = document.getElementById('activity-table');
+      if (at && d.aktivitas) {
+        at.innerHTML = d.aktivitas.map(t => `
+          <tr>
+            <td class="text-sm">${t.Tanggal || '-'}</td>
+            <td class="text-sm">${t.Jam || '-'}</td>
+            <td class="font-mono text-sm">${t.SKU}</td>
+            <td><span class="badge badge-${(t.Jenis || '').toLowerCase()}">${t.Jenis}</span></td>
+            <td class="font-bold">${t.Qty}</td>
+            <td class="text-sm">${t.Admin}</td>
+          </tr>
+        `).join('');
+      }
+    }
+    
+    // === FINDER ===
+    async function applyFilters() {
+      S.filters = {
+        kategori: document.getElementById('filter-kategori').value,
+        produk: document.getElementById('filter-produk').value,
+        warna: document.getElementById('filter-warna').value,
+        size: document.getElementById('filter-size').value
+      };
+      const r = await api('find', { filters: S.filters });
+      renderFinder(r);
+      document.getElementById('result-count').textContent = `${r.length} hasil`;
+    }
+    
+    function resetFilters() {
+      S.filters = {};
+      ['kategori', 'produk', 'warna', 'size'].forEach(f => {
+        const el = document.getElementById('filter-' + f);
+        if (el) el.value = '';
+      });
+      applyFilters();
+    }
+    
+    function renderFinder(r) {
+      const tb = document.getElementById('finder-results');
+      if (!tb) return;
+      if (!r.length) {
+        tb.innerHTML = '<tr><td colspan="8" class="text-center text-sm" style="color: var(--text-dim);">Tidak ada hasil</td></tr>';
+        return;
+      }
+      tb.innerHTML = r.map(i => `
+        <tr>
+          <td class="font-mono text-sm">${i.sku}</td>
+          <td>${i.kategori}</td>
+          <td>${i.produk}</td>
+          <td>${i.warna}</td>
+          <td>${i.size}</td>
+          <td class="font-bold ${i.stok < 10 ? 'text-warning' : ''}">${i.stok}</td>
+          <td>${i.lokasi}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="quickScan('${i.sku}')">
+              <i class="fas fa-qrcode"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    // === MATRIX ===
+    async function loadMatrix() {
+      const f = {
+        kategori: document.getElementById('matrix-kategori').value,
+        produk: document.getElementById('matrix-produk').value,
+        warna: document.getElementById('matrix-warna').value
+      };
+      const m = await api('matrix', { filters: f });
+      renderMatrix(m);
+    }
+    
+    function renderMatrix(m) {
+      const tb = document.getElementById('matrix-table');
+      if (!tb) return;
+      if (!m.length) {
+        tb.innerHTML = '<tr><td class="text-center text-sm" style="color: var(--text-dim);" colspan="10">Tidak ada data</td></tr>';
+        return;
+      }
+      const sizes = [...new Set(m.flatMap(x => Object.keys(x.sizes)))].sort();
+      let html = '<thead><tr><th style="position: sticky; left: 0; background: var(--secondary); z-index: 2;">Produk / Warna</th>';
+      sizes.forEach(s => { html += `<th>${s}</th>`; });
+      html += '</tr></thead><tbody>';
+      
+      m.forEach(r => {
+        html += `<tr><td style="min-width: 200px; text-align: left; position: sticky; left: 0; background: var(--card); z-index: 1;">
+          <div class="font-bold">${r.produk}</div>
+          <div class="text-sm" style="color: var(--text-dim);">${r.warna}</div>
+        </td>`;
+        sizes.forEach(sz => {
+          const c = r.sizes[sz];
+          const cls = !c ? 'ns' : c.stok < 10 ? 'ls' : 'hs';
+          const bg = !c ? 'rgba(255,71,87,0.1)' : c.stok < 10 ? 'rgba(255,193,7,0.2)' : 'rgba(0,245,255,0.1)';
+          html += `<td style="min-width: 60px; padding: 0.5rem; text-align: center; cursor: pointer; background: ${bg}; border: 1px solid var(--border); border-radius: 6px;" 
+            ${c?.sku ? `data-sku="${c.sku}" onclick="quickScan('${c.sku}')"` : ''}>
+            ${c ? `<div class="font-bold">${c.stok}</div><div class="text-sm" style="color: var(--text-dim);">${c.sku?.split('-').pop()}</div>` : '-'}
+          </td>`;
+        });
+        html += '</tr>';
+      });
+      tb.innerHTML = html + '</tbody>';
+    }
+    
+    // === SCANNER ===
+    function initScanner(type) {
+      const cid = 'reader-' + type;
+      const c = document.getElementById(cid);
+      if (!c) return;
+      
+      if (S.scanners[type]) {
+        S.scanners[type].stop().catch(() => {});
+        S.scanners[type] = null;
+      }
+      
+      S.scanners[type] = new Html5Qrcode(cid);
+      S.scanners[type].start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        async (code) => {
+          beep();
+          S.scanners[type].stop().catch(() => {});
+          document.getElementById('start-scan-' + type).disabled = false;
+          document.getElementById('stop-scan-' + type).disabled = true;
+          await handleScan(code, type);
+        },
+        () => {}
+      ).catch(e => {
+        toast('error', 'Scanner Error', 'Izinkan akses kamera');
+        console.error(e);
+      });
+      
+      document.getElementById('start-scan-' + type).disabled = true;
+      document.getElementById('stop-scan-' + type).disabled = false;
+    }
+    
+    function stopScanner(type) {
+      if (S.scanners[type]) {
+        S.scanners[type].stop().catch(() => {});
+        S.scanners[type] = null;
+      }
+      document.getElementById('start-scan-' + type).disabled = false;
+      document.getElementById('stop-scan-' + type).disabled = true;
+    }
+    
+    async function handleScan(code, type) {
+      if (!code || code.length < 5) {
+        toast('warning', 'Invalid Code', 'Kode tidak valid');
+        return;
+      }
+      
+      const r = await api('find', { filters: { produk: code } });
+      const p = r.find(x => x.sku === code) || r[0];
+      
+      if (!p) {
+        toast('error', 'Not Found', `SKU "${code}" tidak ditemukan`);
+        return;
+      }
+      
+      S.curSku = code;
+      document.getElementById('scan-sku-' + type).textContent = p.sku;
+      document.getElementById('scan-nama-' + type).textContent = p.produk;
+      document.getElementById('scan-kat-' + type).textContent = p.kategori;
+      document.getElementById('scan-warna-' + type).textContent = p.warna;
+      document.getElementById('scan-size-' + type).textContent = p.size;
+      document.getElementById('scan-stok-' + type).textContent = p.stok;
+      document.getElementById('scan-qty-' + type).value = 1;
+      document.getElementById('scan-result-' + type).classList.remove('hidden');
+      
+      setTimeout(() => document.getElementById('scan-qty-' + type)?.focus(), 100);
+    }
+    
+    async function confirmScan(jenis) {
+      const type = jenis === 'MASUK' ? 'in' : 'out';
+      const sku = S.curSku;
+      const q = +document.getElementById('scan-qty-' + type).value || 1;
+      
+      if (!sku) {
+        toast('warning', 'No Product', 'Scan produk terlebih dahulu');
+        return;
+      }
+      
+      const r = await api('scan', { sku, jenis, qty: q, username: S.user.username });
+      
+      if (r.success) {
+        toast('success', 'Berhasil', r.message);
+        clearScan(type);
+        refreshDashboard();
+        
+        setTimeout(() => {
+          const activeTab = document.querySelector('.nav-item.active')?.dataset.tab;
+          if (activeTab === 'scan-' + type) initScanner(type);
+        }, 2000);
+      } else {
+        toast('error', 'Gagal', r.message);
+      }
+    }
+    
+    function clearScan(type) {
+      S.curSku = null;
+      document.getElementById('scan-result-' + type).classList.add('hidden');
+      if (S.scanners[type] && document.getElementById('stop-scan-' + type).disabled === false) {
+        initScanner(type);
+      }
+    }
+    
+    function beep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 800;
+        osc.type = 'sine';
+        gain.gain.value = 0.3;
+        osc.start();
+        setTimeout(() => { osc.stop(); ctx.close(); }, 150);
+      } catch (e) { console.error('Beep error:', e); }
+    }
+    
+    // === LABEL PRINT ===
+    async function searchLabels() {
+      const q = document.getElementById('label-search').value;
+      const r = await api('label', { query: q });
+      renderLabels(r.slice(0, 50));
+    }
+    
+    function renderLabels(l) {
+      const tb = document.getElementById('label-list');
+      if (!tb) return;
+      if (!l.length) {
+        tb.innerHTML = '<tr><td colspan="5" class="text-center text-sm" style="color: var(--text-dim);">Tidak ditemukan</td></tr>';
+        return;
+      }
+      tb.innerHTML = l.map(x => `
+        <tr>
+          <td class="font-mono text-sm">${x.sku}</td>
+          <td>${(x.nama || x.produk)?.split(' - ')[0]}</td>
+          <td>${x.warna}</td>
+          <td>${x.size}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="previewLabel('${x.sku}')">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    function previewLabel(sku) {
+      document.getElementById('lbl-qr').innerHTML = '';
+      new QRCode(document.getElementById('lbl-qr'), {
+        text: sku,
+        width: 72,
+        height: 72,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      document.getElementById('lbl-sku').textContent = sku;
+      
+      api('label', { sku }).then(d => {
+        if (d) {
+          document.getElementById('lbl-nama').textContent = d.nama || `${d.produk} - ${d.warna} ${d.size}`;
         }
       });
-  }
-
-  // Inisialisasi tampilan awal
-  showSection('dashboard');
-</script>
-
+      
+      toast('info', 'Preview', 'Klik PRINT LABEL untuk mencetak');
+    }
+    
+    function printLabel() {
+      window.print();
+    }
+    
+    // === SESSION MANAGER ===
+    function showSessionManager() {
+      const m = document.createElement('div');
+      m.className = 'modal-overlay';
+      m.innerHTML = `
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>🔐 Device Aktif</h3>
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            <p class="text-sm" style="margin-bottom: 1rem; color: var(--text-dim);">
+              Kelola device yang sedang login dengan akun Anda.
+            </p>
+            <div id="sessions-list" class="sessions-list">
+              <div class="loading" style="margin: 2rem auto;"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-sm btn-outline" onclick="closeSessionManager()">Tutup</button>
+            <button class="btn btn-sm btn-danger" onclick="logoutAllDevices()">
+              <i class="fas fa-sign-out-alt"></i> Logout Semua Device
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(m);
+      loadSessionsList();
+    }
+    
+    async function loadSessionsList() {
+      const c = document.getElementById('sessions-list');
+      if (!c) return;
+      try {
+        const r = await api('sessions', { username: S.user.username, token: S.token, deviceId: S.devId });
+        if (r.error) { c.innerHTML = `<p class="text-danger">${r.error}</p>`; return; }
+        const s = r.sessions || [];
+        if (!s.length) { c.innerHTML = '<p class="text-center text-sm" style="color: var(--text-dim);">Tidak ada device aktif</p>'; return; }
+        c.innerHTML = s.map(x => `
+          <div class="session-item ${x.deviceId === S.devId ? 'current' : ''}">
+            <div class="session-info">
+              <div class="session-device">${x.deviceName}</div>
+              <div class="session-meta">
+                <span>${fmtDate(x.issuedAt)}</span>
+                <span style="color: var(--primary);">Aktif: ${fmtRel(x.lastActive)}</span>
+              </div>
+            </div>
+            ${x.deviceId !== S.devId ? 
+              `<button class="btn btn-sm btn-outline btn-danger" onclick="revokeSession('${x.deviceId}')">
+                <i class="fas fa-times"></i>
+              </button>` : 
+              '<span class="badge badge-masuk">Device Ini</span>'}
+          </div>
+        `).join('');
+      } catch (e) {
+        c.innerHTML = '<p class="text-danger">Gagal memuat sessions</p>';
+      }
+    }
+    
+    async function revokeSession(deviceId) {
+      if (!confirm('Logout device ini?')) return;
+      const r = await api('logout', { username: S.user.username, deviceId, token: S.token });
+      if (r.success) {
+        toast('success', 'Berhasil', 'Device telah logout');
+        loadSessionsList();
+      } else {
+        toast('error', 'Gagal', r.message || 'Terjadi kesalahan');
+      }
+    }
+    
+    async function logoutAllDevices() {
+      if (!confirm('⚠️ Logout dari SEMUA device kecuali ini?\n\nAnda akan tetap login di device ini.')) return;
+      const r = await api('logout_all', { username: S.user.username, deviceId: S.devId, token: S.token });
+      if (r.success) {
+        toast('success', 'Berhasil', `${r.revoked || 0} device telah logout`);
+        closeSessionManager();
+        loadSessionsList();
+      }
+    }
+    
+    function closeSessionManager() {
+      document.querySelector('.modal-overlay')?.remove();
+    }
+    
+    function fmtDate(ts) {
+      return new Date(ts).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+    
+    function fmtRel(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return 'Baru saja';
+      if (s < 3600) return `${Math.floor(s/60)}m lalu`;
+      if (s < 86400) return `${Math.floor(s/3600)}j lalu`;
+      return `${Math.floor(s/86400)}h lalu`;
+    }
+    
+    // === UTILS ===
+    function toast(ty, title, msg) {
+      const c = document.getElementById('toast-container');
+      const ic = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+      const t = document.createElement('div');
+      t.className = `toast ${ty}`;
+      t.innerHTML = `
+        <div class="toast-header">
+          <i class="fas ${ic[ty] || 'fa-bell'}"></i>
+          <span>${title}</span>
+          <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>
+        </div>
+        <div>${msg?.replace(/\n/g, '<br>')}</div>
+      `;
+      c.appendChild(t);
+      setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(100%)';
+        setTimeout(() => t.remove(), 300);
+      }, 5000);
+    }
+    
+    function showLoading(s) {
+      document.getElementById('loading').classList.toggle('hidden', !s);
+    }
+    
+    function quickScan(sku) {
+      document.querySelector('[data-tab="scan-in"]').click();
+      setTimeout(async () => {
+        S.curSku = sku;
+        const r = await api('find', { filters: { produk: sku } });
+        const p = r.find(x => x.sku === sku);
+        if (p) {
+          document.getElementById('scan-sku-in').textContent = p.sku;
+          document.getElementById('scan-nama-in').textContent = p.produk;
+          document.getElementById('scan-kat-in').textContent = p.kategori;
+          document.getElementById('scan-warna-in').textContent = p.warna;
+          document.getElementById('scan-size-in').textContent = p.size;
+          document.getElementById('scan-stok-in').textContent = p.stok;
+          document.getElementById('scan-result-in').classList.remove('hidden');
+        }
+      }, 300);
+    }
+    
+    // === INIT ===
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load filter options
+      try {
+        const opt = await api('options');
+        ['filter-kategori', 'matrix-kategori'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && opt.kategori) {
+            el.innerHTML = '<option value="">Semua</option>' + opt.kategori.map(o => `<option value="${o}">${o}</option>`).join('');
+          }
+        });
+        ['filter-produk', 'matrix-produk'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && opt.produk) {
+            el.innerHTML = '<option value="">Semua</option>' + opt.produk.map(o => `<option value="${o}">${o}</option>`).join('');
+          }
+        });
+        ['filter-warna', 'matrix-warna'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && opt.warna) {
+            el.innerHTML = '<option value="">Semua</option>' + opt.warna.map(o => `<option value="${o}">${o}</option>`).join('');
+          }
+        });
+      } catch (e) { console.error('Load options error:', e); }
+      
+      // Validate session
+      if (await Auth.validate()) {
+        document.getElementById('login-page').classList.add('hidden');
+        document.getElementById('app-page').classList.remove('hidden');
+        updateUI();
+        await initApp();
+      }
+      
+      // Session button
+      document.getElementById('session-btn')?.addEventListener('click', showSessionManager);
+      document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
+      
+      // Scanner buttons
+      document.getElementById('start-scan-in')?.addEventListener('click', () => initScanner('in'));
+      document.getElementById('stop-scan-in')?.addEventListener('click', () => stopScanner('in'));
+      document.getElementById('start-scan-out')?.addEventListener('click', () => initScanner('out'));
+      document.getElementById('stop-scan-out')?.addEventListener('click', () => stopScanner('out'));
+    });
+    
+    async function initApp() {
+      await refreshDashboard();
+    }
+  </script>
 </body>
 </html>
