@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body{font-family:sans-serif;background:#fff;margin:0}
+.container{padding:15px}
+input,select,button{
+  width:100%;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:8px
+}
+button{background:#111;color:#fff}
+.card{border:1px solid #eee;padding:10px;margin:5px 0;border-radius:8px}
+.nav{display:flex;gap:5px;overflow:auto}
+.nav button{flex:1;font-size:12px}
+.matrix{overflow:auto}
+.matrix table{border-collapse:collapse;width:100%}
+.matrix td,.matrix th{border:1px solid #ddd;padding:6px;text-align:center}
+.label{width:50mm;height:30mm;border:1px solid #000;padding:5px;font-size:10px}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="loginBox">
+  <h2>LOGIN</h2>
+  <input id="u" placeholder="Username">
+  <input id="p" type="password" placeholder="Password">
+  <button onclick="doLogin()">LOGIN</button>
+</div>
+
+<div class="container" id="app" style="display:none">
+
+  <h3 id="nama"></h3>
+
+  <div class="nav">
+    <button onclick="scanPage('MASUK')">MASUK</button>
+    <button onclick="scanPage('KELUAR')">KELUAR</button>
+    <button onclick="finderPage()">FINDER</button>
+    <button onclick="matrixPage()">MATRIX</button>
+    <button onclick="labelPage()">LABEL</button>
+    <button onclick="dashboard()">LOG</button>
+  </div>
+
+  <div id="content"></div>
+
+</div>
+
+<script>
+const API="URL_WEBAPP_KAMU";
+let USER="";
+
+// DOM
+const elLogin = document.getElementById("loginBox");
+const elApp = document.getElementById("app");
+const elNama = document.getElementById("nama");
+const elContent = document.getElementById("content");
+
+// ================= LOGIN =================
+function doLogin(){
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      method:"login",
+      data:{
+        username:document.getElementById("u").value,
+        password:document.getElementById("p").value
+      }
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    console.log(res);
+
+    if(res.status){
+      USER=res.nama;
+      elLogin.style.display="none";
+      elApp.style.display="block";
+      elNama.innerText="Hi "+USER;
+    }else alert("Login gagal");
+  })
+  .catch(err=>{
+    console.log(err);
+    alert("API error");
+  });
+}
+
+// ================= DROPDOWN LOAD =================
+let DD={};
+
+function loadDropdown(callback){
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({method:"dropdown"})
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    DD=d;
+    callback();
+  });
+}
+
+function fillSelect(id, arr){
+  let el = document.getElementById(id);
+  el.innerHTML = `<option value="">-- pilih --</option>`;
+  arr.forEach(v=>{
+    el.innerHTML += `<option>${v}</option>`;
+  });
+}
+
+// ================= FINDER =================
+function finderPage(){
+  elContent.innerHTML=`
+    <h3>FINDER</h3>
+
+    <select id="fk"></select>
+    <select id="fp"></select>
+    <select id="fw"></select>
+    <select id="fs"></select>
+
+    <button onclick="goFinder()">CARI</button>
+    <div id="hasil"></div>
+  `;
+
+  loadDropdown(()=>{
+    fillSelect("fk", DD.kategori);
+
+    fk.onchange = ()=>{
+      fillSelect("fp", DD.produk[fk.value] || []);
+    };
+
+    fp.onchange = ()=>{
+      fillSelect("fw", DD.warna[fk.value+"|"+fp.value] || []);
+    };
+
+    fw.onchange = ()=>{
+      fillSelect("fs", DD.size[fk.value+"|"+fp.value+"|"+fw.value] || []);
+    };
+  });
+}
+
+function goFinder(){
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      method:"finder",
+      data:{
+        kategori:fk.value,
+        produk:fp.value,
+        warna:fw.value,
+        size:fs.value
+      }
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    let html="";
+    res.forEach(d=>{
+      html+=`<div class="card">
+        ${d.sku}<br>
+        ${d.stok} pcs | ${d.lokasi}
+      </div>`;
+    });
+    hasil.innerHTML=html;
+  });
+}
+
+// ================= MATRIX =================
+function matrixPage(){
+  elContent.innerHTML=`
+    <h3>MATRIX</h3>
+    <select id="mk"></select>
+    <select id="mp"></select>
+    <button onclick="loadMatrix()">LOAD</button>
+    <div id="hasil"></div>
+  `;
+
+  loadDropdown(()=>{
+    fillSelect("mk", DD.kategori);
+
+    mk.onchange = ()=>{
+      fillSelect("mp", DD.produk[mk.value] || []);
+    };
+  });
+}
+
+function loadMatrix(){
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      method:"matrix",
+      data:{kategori:mk.value,produk:mp.value}
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    let html="<div class='matrix'><table><tr><th>WARNA</th>";
+
+    res.size.forEach(s=> html+=`<th>${s}</th>`);
+    html+="</tr>";
+
+    res.warna.forEach(w=>{
+      html+=`<tr><td>${w}</td>`;
+      res.size.forEach(s=>{
+        html+=`<td>${res.data[w]?.[s]||0}</td>`;
+      });
+      html+="</tr>";
+    });
+
+    html+="</table></div>";
+    hasil.innerHTML=html;
+  });
+}
+
+// ================= SCAN =================
+function scanPage(jenis){
+  elContent.innerHTML=`
+    <h3>SCAN ${jenis}</h3>
+    <div id="reader"></div>
+    <div id="hasil"></div>
+  `;
+
+  const qr=new Html5Qrcode("reader");
+
+  qr.start({facingMode:"environment"},{fps:10,qrbox:250},
+  code=>{
+    beep();
+
+    fetch(API,{
+      method:"POST",
+      body:JSON.stringify({
+        method:"scan",
+        data:{qr:code,jenis:jenis,admin:USER}
+      })
+    })
+    .then(r=>r.json())
+    .then(res=>{
+      if(res.status){
+        hasil.innerHTML=`
+        <div class="card">
+        ${res.item.nama}<br>
+        SKU: ${res.item.sku}<br>
+        Stok: ${res.stok}
+        </div>`;
+      }else alert(res.msg);
+    });
+  });
+}
+
+// ================= LABEL =================
+function labelPage(){
+  elContent.innerHTML=`
+    <h3>PRINT LABEL</h3>
+    <input id="sku" placeholder="Input SKU">
+    <button onclick="loadLabel()">LOAD</button>
+    <div id="printArea"></div>
+    <button onclick="window.print()">PRINT</button>
+  `;
+}
+
+function loadLabel(){
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      method:"label",
+      data:{sku:sku.value}
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(!d) return alert("SKU tidak ditemukan");
+
+    printArea.innerHTML=`
+    <div class="label">
+      <b>${d.sku}</b><br>
+      ${d.kategori}<br>
+      ${d.produk}<br>
+      ${d.warna} / ${d.size}<br>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${d.qr}">
+    </div>`;
+  });
+}
+
+// ================= DASHBOARD =================
+function dashboard(){
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({method:"dashboard"})
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    let html="<h3>Aktivitas</h3>";
+    res.reverse().forEach(d=>{
+      html+=`<div class="card">
+      ${d[0]} ${d[1]}<br>
+      ${d[2]} - ${d[3]}
+      </div>`;
+    });
+    elContent.innerHTML=html;
+  });
+}
+
+// ================= BEEP =================
+function beep(){
+  let ctx=new AudioContext();
+  let osc=ctx.createOscillator();
+  osc.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime+0.1);
+}
+</script>
+
+</body>
+</html>
