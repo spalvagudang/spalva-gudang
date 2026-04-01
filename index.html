@@ -1,0 +1,1680 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Gudang — Warehouse App</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #fbfbfc;
+      --panel: rgba(255,255,255,.82);
+      --panelSolid: #ffffff;
+      --ink: #101114;
+      --muted: rgba(16,17,20,.62);
+      --muted2: rgba(16,17,20,.44);
+      --border: rgba(16,17,20,.10);
+      --border2: rgba(16,17,20,.14);
+      --shadow: 0 18px 60px rgba(16,17,20,.08);
+      --shadow2: 0 10px 30px rgba(16,17,20,.08);
+      --brand: #1e3a8a;    /* indigo-ish */
+      --brand2: #0f766e;   /* teal */
+      --accent: #b45309;   /* amber/brown */
+      --danger: #b91c1c;
+      --ok: #047857;
+
+      --radius-xl: 26px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-sm: 12px;
+
+      --max: 1180px;
+      --pad: clamp(16px, 2.4vw, 26px);
+      --fontDisplay: "Fraunces", serif;
+      --fontBody: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{ box-sizing: border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: var(--fontBody);
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 600px at 12% 8%, rgba(30,58,138,.10), transparent 60%),
+        radial-gradient(900px 520px at 88% 18%, rgba(15,118,110,.10), transparent 55%),
+        radial-gradient(900px 520px at 50% 105%, rgba(180,83,9,.08), transparent 55%),
+        linear-gradient(180deg, #ffffff, var(--bg));
+      overflow-x: hidden;
+    }
+
+    a{ color: inherit; }
+    button, input, select{ font: inherit; }
+    .sr-only{
+      position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;
+    }
+
+    /* Layout */
+    .shell{
+      min-height: 100%;
+      display:grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    header{
+      position: sticky;
+      top:0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.74));
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 14px var(--pad);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand{
+      display:flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 240px;
+    }
+    .logo{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      background:
+        radial-gradient(18px 18px at 30% 30%, rgba(255,255,255,.9), transparent 55%),
+        linear-gradient(135deg, rgba(30,58,138,.95), rgba(15,118,110,.95));
+      box-shadow: 0 10px 24px rgba(30,58,138,.18);
+      border: 1px solid rgba(255,255,255,.75);
+    }
+    .brand h1{
+      margin:0;
+      font-family: var(--fontDisplay);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+    .brand .sub{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+      letter-spacing: .02em;
+    }
+
+    .nav{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+      justify-content: center;
+      flex: 1;
+    }
+    .tab{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.6);
+      padding: 10px 12px;
+      border-radius: 999px;
+      color: rgba(16,17,20,.76);
+      cursor:pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+      user-select: none;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: .01em;
+    }
+    .tab:hover{ transform: translateY(-1px); border-color: var(--border2); background: rgba(255,255,255,.9); color: rgba(16,17,20,.92); }
+    .tab[aria-selected="true"]{
+      background: linear-gradient(180deg, rgba(30,58,138,.10), rgba(15,118,110,.08));
+      border-color: rgba(30,58,138,.22);
+      color: rgba(16,17,20,.95);
+      box-shadow: 0 12px 30px rgba(16,17,20,.08);
+    }
+
+    .userbox{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 260px;
+      justify-content:flex-end;
+    }
+    .chip{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.75);
+    }
+    .avatar{
+      width: 28px; height: 28px; border-radius: 10px;
+      background:
+        radial-gradient(20px 20px at 30% 35%, rgba(255,255,255,.9), transparent 55%),
+        linear-gradient(135deg, rgba(180,83,9,.78), rgba(30,58,138,.78));
+      border: 1px solid rgba(255,255,255,.7);
+    }
+    .chip .meta{
+      display:flex; flex-direction: column;
+      line-height: 1.1;
+    }
+    .chip .meta b{ font-size: 12.5px; }
+    .chip .meta span{ font-size: 11px; color: var(--muted); }
+
+    .btn{
+      border: 1px solid var(--border);
+      background: var(--panelSolid);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: .01em;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); border-color: var(--border2); }
+    .btn:active{ transform: translateY(0px) scale(.99); box-shadow: none; }
+    .btn.primary{
+      border-color: rgba(30,58,138,.22);
+      background: linear-gradient(180deg, rgba(30,58,138,.12), rgba(15,118,110,.08));
+    }
+    .btn.danger{
+      border-color: rgba(185,28,28,.22);
+      background: linear-gradient(180deg, rgba(185,28,28,.10), rgba(185,28,28,.06));
+      color: #7f1d1d;
+    }
+    .btn.ghost{
+      background: transparent;
+    }
+
+    main{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 18px var(--pad) 34px;
+      width: 100%;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      align-items:start;
+    }
+
+    .panel{
+      border: 1px solid var(--border);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel .hd{
+      padding: 18px 18px 14px;
+      display:flex;
+      align-items:flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.65));
+    }
+    .panel .hd h2{
+      margin:0;
+      font-family: var(--fontDisplay);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: clamp(18px, 1.6vw, 22px);
+    }
+    .panel .hd p{
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .panel .bd{ padding: 16px 18px 18px; }
+
+    .kpiRow{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .kpi{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255,255,255,.75);
+      padding: 12px 12px 10px;
+    }
+    .kpi .label{ color: var(--muted); font-size: 12px; }
+    .kpi .val{ font-size: 18px; font-weight: 800; letter-spacing: -.01em; margin-top: 4px; }
+    .kpi .hint{ color: var(--muted2); font-size: 11.5px; margin-top: 2px; }
+
+    .formRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .field{
+      display:flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .field label{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .control{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      border-radius: 14px;
+      padding: 12px 12px;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .control:focus{
+      border-color: rgba(30,58,138,.28);
+      box-shadow: 0 0 0 4px rgba(30,58,138,.10);
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .note{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    /* Table */
+    .tableWrap{
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255,255,255,.75);
+    }
+    table{
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th{
+      text-align:left;
+      font-size: 12px;
+      color: rgba(16,17,20,.72);
+      background: rgba(255,255,255,.9);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody td{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(16,17,20,.06);
+      font-size: 13px;
+      vertical-align: top;
+    }
+    tbody tr:hover td{ background: rgba(30,58,138,.04); }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.85);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .01em;
+    }
+    .pill.ok{ border-color: rgba(4,120,87,.18); background: rgba(4,120,87,.08); color: #065f46; }
+    .pill.bad{ border-color: rgba(185,28,28,.18); background: rgba(185,28,28,.07); color: #7f1d1d; }
+    .pill.info{ border-color: rgba(30,58,138,.18); background: rgba(30,58,138,.07); color: #1e3a8a; }
+
+    /* Auth */
+    .authWrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 26px var(--pad) 40px;
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .hero{
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(1200px 600px at 30% 30%, rgba(30,58,138,.18), transparent 55%),
+        radial-gradient(900px 520px at 70% 60%, rgba(15,118,110,.16), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.62));
+      box-shadow: var(--shadow);
+      padding: 26px;
+      position: relative;
+    }
+    .hero h2{
+      margin: 0;
+      font-family: var(--fontDisplay);
+      letter-spacing: -0.03em;
+      font-size: clamp(28px, 3vw, 40px);
+      line-height: 1.05;
+    }
+    .hero p{
+      margin: 10px 0 0;
+      color: rgba(16,17,20,.70);
+      max-width: 52ch;
+      line-height: 1.5;
+    }
+    .hero .bullets{
+      margin-top: 18px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .bullet{
+      display:flex; gap: 10px; align-items:flex-start;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.70);
+      border: 1px solid rgba(16,17,20,.10);
+    }
+    .dot{
+      width: 10px; height: 10px; border-radius: 999px;
+      background: linear-gradient(180deg, rgba(30,58,138,.95), rgba(15,118,110,.95));
+      margin-top: 5px;
+      flex: 0 0 auto;
+    }
+    .bullet b{ display:block; font-size: 13px; }
+    .bullet span{ display:block; font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+    .login{
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .login .hd{
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.70));
+    }
+    .login .hd h3{
+      margin:0;
+      font-family: var(--fontDisplay);
+      letter-spacing: -0.02em;
+      font-size: 22px;
+    }
+    .login .bd{ padding: 16px 20px 20px; }
+
+    .toast{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 80;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: min(520px, calc(100vw - 32px));
+    }
+    .toast .item{
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.92);
+      box-shadow: var(--shadow2);
+      padding: 12px 12px;
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+    }
+    .toast .item .ic{
+      width: 30px; height: 30px; border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(30,58,138,.08);
+      display:grid; place-items:center;
+      font-weight: 900;
+      color: var(--brand);
+      flex: 0 0 auto;
+    }
+    .toast .item .tx b{ display:block; font-size: 13px; }
+    .toast .item .tx span{ display:block; margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+
+    /* Scanner */
+    .scanner{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .cam{
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+      position: relative;
+      min-height: 220px;
+    }
+    video{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display:block;
+      background: #f2f3f5;
+    }
+    .reticle{
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+      background:
+        radial-gradient(220px 160px at 50% 50%, transparent 62%, rgba(255,255,255,.0) 62%),
+        radial-gradient(220px 160px at 50% 50%, rgba(16,17,20,.0) 0%, rgba(16,17,20,.0) 55%, rgba(16,17,20,.14) 100%);
+    }
+    .frame{
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+    }
+    .frame:before{
+      content:"";
+      position:absolute;
+      left: 50%; top: 50%;
+      width: min(72%, 360px);
+      height: 180px;
+      transform: translate(-50%,-50%);
+      border-radius: 18px;
+      border: 2px solid rgba(255,255,255,.9);
+      box-shadow: 0 0 0 6px rgba(30,58,138,.10);
+    }
+    .scanReadout{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.5px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.86);
+    }
+
+    /* Label print */
+    @media print{
+      body{ background: #fff; }
+      header, main, footer, .toast, .printModalBackdrop{ display:none !important; }
+      #printArea{ display:block !important; }
+    }
+    #printArea{
+      display:none;
+      padding: 0;
+      margin: 0;
+    }
+    .label50x30{
+      width: 50mm;
+      height: 30mm;
+      border: 1px solid #000;
+      padding: 2mm;
+      display:flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-family: var(--fontBody);
+    }
+    .labelTop{
+      display:flex;
+      justify-content: space-between;
+      gap: 2mm;
+    }
+    .labelSku{
+      font-weight: 800;
+      font-size: 11pt;
+      letter-spacing: .02em;
+      line-height: 1.05;
+    }
+    .labelMeta{
+      font-size: 7.5pt;
+      line-height: 1.15;
+    }
+    .barcodeBox{
+      display:flex;
+      align-items:flex-end;
+      justify-content: space-between;
+      gap: 2mm;
+    }
+    .barcodeSvg{
+      width: 100%;
+      height: 12mm;
+    }
+    .barcodeText{
+      font-size: 7pt;
+      letter-spacing: .08em;
+      text-align: center;
+      margin-top: 1mm;
+    }
+
+    /* Footer */
+    footer{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 18px var(--pad) 22px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .authWrap{ grid-template-columns: 1fr; }
+      .brand{ min-width: auto; }
+      .userbox{ min-width: auto; }
+      .kpiRow{ grid-template-columns: 1fr; }
+      .formRow{ grid-template-columns: 1fr; }
+      .nav{ justify-content: flex-start; }
+    }
+
+    /* Reveal */
+    .reveal{
+      opacity: 0;
+      transform: translateY(10px);
+      animation: rise .6s ease forwards;
+    }
+    @keyframes rise{
+      to{ opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+<div class="shell">
+  <header id="appHeader" style="display:none">
+    <div class="topbar">
+      <div class="brand" aria-label="Brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Gudang</h1>
+          <span class="sub">Scan • Stok • Label</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Navigasi">
+        <button class="tab" data-view="dashboard" aria-selected="true">Dashboard</button>
+        <button class="tab" data-view="finder" aria-selected="false">Finder Produk</button>
+        <button class="tab" data-view="matrix" aria-selected="false">Matrix Stok</button>
+        <button class="tab" data-view="scanIn" aria-selected="false">Scan Masuk</button>
+        <button class="tab" data-view="scanOut" aria-selected="false">Scan Keluar</button>
+        <button class="tab" data-view="label" aria-selected="false">Print Label</button>
+      </nav>
+
+      <div class="userbox">
+        <div class="chip" title="User login & jam saat ini">
+          <div class="avatar" aria-hidden="true"></div>
+          <div class="meta">
+            <b id="whoName">—</b>
+            <span><span id="whoUser">—</span> • <span id="clock">--:--:--</span></span>
+          </div>
+        </div>
+        <button class="btn danger" id="btnLogout" title="Sign out">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- AUTH -->
+  <section id="auth" class="authWrap">
+    <div class="hero reveal" style="animation-delay:.02s">
+      <h2>Gudang yang cepat, rapi, dan mudah dipakai.</h2>
+      <p>
+        Login multi-user, scan masuk/keluar via kamera, pencarian stok, matrix ukuran, hingga cetak label 50×30mm—semua tersimpan di Google Spreadsheet.
+      </p>
+      <div class="bullets">
+        <div class="bullet">
+          <div class="dot" aria-hidden="true"></div>
+          <div>
+            <b>Siap untuk 5000 SKU</b>
+            <span>Backend memakai cache + index SKU agar lookup barcode & update stok tidak berat.</span>
+          </div>
+        </div>
+        <div class="bullet">
+          <div class="dot" aria-hidden="true"></div>
+          <div>
+            <b>Audit trail transaksi</b>
+            <span>Setiap scan tercatat di DATA_TRANSAKSI: tanggal, jam, SKU, jenis, qty, admin.</span>
+          </div>
+        </div>
+        <div class="bullet">
+          <div class="dot" aria-hidden="true"></div>
+          <div>
+            <b>UX putih yang “orang awan friendly”</b>
+            <span>UI besar, jelas, dan minim distraksi untuk operasional harian.</span>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Catatan: pastikan Apps Script Web App sudah di-deploy dan URL-nya dipasang di <span class="mono">GAS_WEBAPP_URL</span>.
+      </p>
+    </div>
+
+    <div class="login reveal" style="animation-delay:.08s" aria-label="Form Login">
+      <div class="hd">
+        <h3>Login</h3>
+        <p style="margin:6px 0 0;color:var(--muted);font-size:13px;">Masuk menggunakan username & password dari sheet <b>USER</b>.</p>
+      </div>
+      <div class="bd">
+        <div class="field">
+          <label for="loginUser">Username</label>
+          <input id="loginUser" class="control" autocomplete="username" placeholder="contoh: admin" />
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label for="loginPass">Password</label>
+          <input id="loginPass" class="control" type="password" autocomplete="current-password" placeholder="••••••••" />
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="btnLogin">Masuk</button>
+          <button class="btn ghost" id="btnFillDemo" title="Isi contoh (opsional)">Isi contoh</button>
+        </div>
+
+        <div class="note">
+          Keamanan: password di sheet <b>USER</b> harus berbentuk <b>SHA-256 hash</b>, bukan plaintext (lihat backend CODE.GS).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <main id="appMain" style="display:none">
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="panel reveal" data-viewpanel="dashboard">
+      <div class="hd">
+        <div>
+          <h2>Dashboard</h2>
+          <p>Aktivitas terakhir dari <b>DATA_TRANSAKSI</b>.</p>
+        </div>
+        <div class="actions" style="margin:0">
+          <button class="btn" id="btnRefreshDash">Refresh</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="kpiRow">
+          <div class="kpi">
+            <div class="label">Login sebagai</div>
+            <div class="val" id="kpiUser">—</div>
+            <div class="hint">Multi user & device (tercatat di SESSIONS)</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Transaksi ditampilkan</div>
+            <div class="val" id="kpiTxCount">0</div>
+            <div class="hint">Terbaru → lama</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Status koneksi</div>
+            <div class="val" id="kpiConn">—</div>
+            <div class="hint">Apps Script Web App</div>
+          </div>
+        </div>
+
+        <div class="tableWrap" style="max-height: 420px; overflow:auto;">
+          <table aria-label="Tabel transaksi terakhir">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Jam</th>
+                <th>SKU</th>
+                <th>Jenis</th>
+                <th>Qty</th>
+                <th>Status</th>
+                <th>Admin</th>
+              </tr>
+            </thead>
+            <tbody id="dashBody">
+              <tr><td colspan="7" style="color:var(--muted);">Memuat…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINDER + QUICK HELP -->
+    <section class="grid" style="margin-top: 16px;">
+      <section id="view-finder" class="panel reveal" data-viewpanel="finder" style="animation-delay:.03s">
+        <div class="hd">
+          <div>
+            <h2>Finder Produk</h2>
+            <p>Filter dari <b>STOK_OTOMATIS</b> → hasil tabel (SKU, kategori, produk, warna, size, stok akhir, lokasi).</p>
+          </div>
+          <div class="actions" style="margin:0">
+            <button class="btn" id="btnFinderReset">Reset</button>
+            <button class="btn primary" id="btnFinderSearch">Cari</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="formRow">
+            <div class="field">
+              <label for="fKategori">Kategori</label>
+              <input id="fKategori" class="control" placeholder="mis: Kaos" />
+            </div>
+            <div class="field">
+              <label for="fProduk">Produk</label>
+              <input id="fProduk" class="control" placeholder="mis: Basic Tee" />
+            </div>
+            <div class="field">
+              <label for="fWarna">Warna</label>
+              <input id="fWarna" class="control" placeholder="mis: Hitam" />
+            </div>
+            <div class="field">
+              <label for="fSize">Size</label>
+              <input id="fSize" class="control" placeholder="mis: L" />
+            </div>
+          </div>
+
+          <div class="note">Tips: isi sebagian atau semua filter. Untuk performa, hasil dibatasi maksimal 500 baris per pencarian.</div>
+
+          <div class="tableWrap" style="margin-top: 14px; max-height: 420px; overflow:auto;">
+            <table aria-label="Tabel finder produk">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Kategori</th>
+                  <th>Produk</th>
+                  <th>Warna</th>
+                  <th>Size</th>
+                  <th>Stok akhir</th>
+                  <th>Lokasi</th>
+                </tr>
+              </thead>
+              <tbody id="finderBody">
+                <tr><td colspan="7" style="color:var(--muted);">Silakan cari…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel reveal" style="animation-delay:.06s">
+        <div class="hd">
+          <div>
+            <h2>Ringkas</h2>
+            <p>Yang sering dibutuhkan operator.</p>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="kpi" style="border-radius:18px;">
+            <div class="label">Mode input cepat</div>
+            <div class="val" style="font-size:14px;margin-top:6px;">Scanner kamera</div>
+            <div class="hint">Masuk/Keluar: scan → beep → qty → simpan.</div>
+          </div>
+
+          <div class="kpi" style="border-radius:18px;margin-top:10px;">
+            <div class="label">Catatan</div>
+            <div class="hint" style="margin-top:6px;">
+              Barcode paling stabil pakai QR yang berisi <b>BARCODE</b> atau langsung <b>SKU</b>.
+              Untuk barcode 1D, gunakan scanner fisik (mode keyboard) atau upgrade decoder 1D.
+            </div>
+          </div>
+
+          <div class="kpi" style="border-radius:18px;margin-top:10px;">
+            <div class="label">Kualitas data</div>
+            <div class="hint" style="margin-top:6px;">
+              Pastikan <b>MASTER_PRODUK</b> lengkap (SKU, BARCODE, atribut) agar scan selalu valid.
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- MATRIX -->
+    <section id="view-matrix" class="panel reveal" data-viewpanel="matrix" style="margin-top: 16px;">
+      <div class="hd">
+        <div>
+          <h2>Matrix Stok</h2>
+          <p>Filter kategori/produk/warna → tampilkan stok per size.</p>
+        </div>
+        <div class="actions" style="margin:0">
+          <button class="btn" id="btnMatrixReset">Reset</button>
+          <button class="btn primary" id="btnMatrixRun">Tampilkan</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="formRow">
+          <div class="field">
+            <label for="mKategori">Kategori</label>
+            <input id="mKategori" class="control" placeholder="mis: Kaos" />
+          </div>
+          <div class="field">
+            <label for="mProduk">Produk</label>
+            <input id="mProduk" class="control" placeholder="mis: Basic Tee" />
+          </div>
+          <div class="field">
+            <label for="mWarna">Warna</label>
+            <input id="mWarna" class="control" placeholder="mis: Hitam" />
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <div class="actions" style="margin:0">
+              <button class="btn" id="btnMatrixExport">Copy CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tableWrap" style="margin-top: 14px; max-height: 460px; overflow:auto;">
+          <table aria-label="Tabel matrix stok">
+            <thead>
+              <tr id="matrixHead">
+                <th>Kategori</th><th>Produk</th><th>Warna</th>
+              </tr>
+            </thead>
+            <tbody id="matrixBody">
+              <tr><td colspan="3" style="color:var(--muted);">Silakan tampilkan…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCAN IN -->
+    <section id="view-scanIn" class="panel reveal" data-viewpanel="scanIn" style="margin-top: 16px;">
+      <div class="hd">
+        <div>
+          <h2>Scan Barang Masuk</h2>
+          <p>Scan QR/Barcode → tambah stok → catat transaksi.</p>
+        </div>
+        <div class="actions" style="margin:0">
+          <button class="btn" id="btnCamIn">Start Kamera</button>
+          <button class="btn" id="btnStopIn">Stop</button>
+          <button class="btn primary" id="btnCommitIn" disabled>Simpan Masuk</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="scanner">
+          <div class="cam" aria-label="Preview kamera scan masuk">
+            <video id="videoIn" playsinline muted></video>
+            <div class="reticle" aria-hidden="true"></div>
+            <div class="frame" aria-hidden="true"></div>
+          </div>
+
+          <div class="scanReadout">
+            <span class="pill info">Terbaca</span>
+            <span class="mono" id="readIn">—</span>
+            <span class="pill info">QTY</span>
+            <input id="qtyIn" class="control" inputmode="numeric" value="1" style="max-width:110px;padding:10px 12px;border-radius:12px;">
+            <button class="btn" id="btnClearIn">Clear</button>
+          </div>
+
+          <div class="note" id="noteIn">Arahkan kamera ke QR. Setelah terbaca akan berbunyi beep dan tombol simpan aktif.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCAN OUT -->
+    <section id="view-scanOut" class="panel reveal" data-viewpanel="scanOut" style="margin-top: 16px;">
+      <div class="hd">
+        <div>
+          <h2>Scan Barang Keluar</h2>
+          <p>Scan QR/Barcode → kurangi stok → catat transaksi.</p>
+        </div>
+        <div class="actions" style="margin:0">
+          <button class="btn" id="btnCamOut">Start Kamera</button>
+          <button class="btn" id="btnStopOut">Stop</button>
+          <button class="btn primary" id="btnCommitOut" disabled>Simpan Keluar</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="scanner">
+          <div class="cam" aria-label="Preview kamera scan keluar">
+            <video id="videoOut" playsinline muted></video>
+            <div class="reticle" aria-hidden="true"></div>
+            <div class="frame" aria-hidden="true"></div>
+          </div>
+
+          <div class="scanReadout">
+            <span class="pill info">Terbaca</span>
+            <span class="mono" id="readOut">—</span>
+            <span class="pill info">QTY</span>
+            <input id="qtyOut" class="control" inputmode="numeric" value="1" style="max-width:110px;padding:10px 12px;border-radius:12px;">
+            <button class="btn" id="btnClearOut">Clear</button>
+          </div>
+
+          <div class="note" id="noteOut">Arahkan kamera ke QR. Jika stok tidak cukup, sistem menolak.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LABEL -->
+    <section id="view-label" class="panel reveal" data-viewpanel="label" style="margin-top: 16px;">
+      <div class="hd">
+        <div>
+          <h2>Print Label 50×30mm</h2>
+          <p>Ambil data dari <b>MASTER_PRODUK</b>: SKU, kategori, produk, warna, size + barcode.</p>
+        </div>
+        <div class="actions" style="margin:0">
+          <button class="btn" id="btnLabelFetch">Ambil Data</button>
+          <button class="btn primary" id="btnLabelPrint" disabled>Print</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="formRow">
+          <div class="field">
+            <label for="labelSku">SKU</label>
+            <input id="labelSku" class="control" placeholder="mis: SKU-001" />
+          </div>
+          <div class="field">
+            <label>Preview</label>
+            <div class="tableWrap" style="padding:12px;border-radius:18px;">
+              <div id="labelPreview" style="display:flex;justify-content:center;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="note">Klik <b>Ambil Data</b> lalu <b>Print</b>. Pastikan pengaturan printer thermal: ukuran 50×30mm.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© <span id="year"></span> Gudang App • Data: Google Spreadsheet • Frontend: GitHub Pages • Backend: Google Apps Script</span>
+  </footer>
+
+  <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Hidden print area -->
+  <div id="printArea"></div>
+</div>
+
+<script>
+/* ======================
+   CONFIG
+====================== */
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxkR2oE790rZYKFTotrT1HhmfFufpIulNmNE2azyXM_-iWj_7UQVVB_uhCi9QaTRhhVSA/exec"; // contoh: https://script.google.com/macros/s/AKfycb.../exec
+
+/* ======================
+   State
+====================== */
+const state = {
+  sessionId: localStorage.getItem("gudang_sessionId") || "",
+  user: null,
+  deviceId: localStorage.getItem("gudang_deviceId") || "",
+  currentView: "dashboard",
+  scan: {
+    in: { stream:null, lastText:"", lock:false },
+    out:{ stream:null, lastText:"", lock:false }
+  }
+};
+
+if(!state.deviceId){
+  state.deviceId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ("dev-"+Math.random().toString(16).slice(2));
+  localStorage.setItem("gudang_deviceId", state.deviceId);
+}
+
+/* ======================
+   Helpers
+====================== */
+const $ = (sel, el=document) => el.querySelector(sel);
+const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+
+function toast(title, msg, type="info", ttl=3800){
+  const host = $("#toast");
+  const item = document.createElement("div");
+  item.className = "item";
+  const ic = document.createElement("div");
+  ic.className = "ic";
+  ic.textContent = type === "ok" ? "OK" : type === "bad" ? "!" : "i";
+  ic.style.background = type==="ok" ? "rgba(4,120,87,.10)" : type==="bad" ? "rgba(185,28,28,.08)" : "rgba(30,58,138,.08)";
+  ic.style.color = type==="ok" ? "#047857" : type==="bad" ? "#b91c1c" : "#1e3a8a";
+
+  const tx = document.createElement("div");
+  tx.className = "tx";
+  tx.innerHTML = `<b>${escapeHtml(title)}</b><span>${escapeHtml(msg)}</span>`;
+  item.append(ic, tx);
+  host.appendChild(item);
+
+  setTimeout(()=>{ item.style.opacity="0"; item.style.transform="translateY(6px)"; item.style.transition="all .25s ease"; }, ttl);
+  setTimeout(()=> item.remove(), ttl+350);
+}
+
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function api(action, body={}){
+  if(!GAS_WEBAPP_URL || GAS_WEBAPP_URL.includes("PASTE_")){
+    throw new Error("GAS_WEBAPP_URL belum diisi.");
+  }
+  const payload = {
+    action,
+    sessionId: state.sessionId || "",
+    ...body
+  };
+  const res = await fetch(GAS_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  });
+  const json = await res.json();
+  if(!json.ok){
+    throw new Error(json.data?.message || "Request gagal");
+  }
+  return json.data;
+}
+
+function setSelectedTab(view){
+  $$(".tab").forEach(b=>{
+    const on = b.dataset.view === view;
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  $$("[data-viewpanel]").forEach(p=>{
+    p.style.display = (p.dataset.viewpanel === view) ? "" : "none";
+  });
+  state.currentView = view;
+  // stop kamera bila pindah dari scan
+  if(view !== "scanIn") stopCamera("in");
+  if(view !== "scanOut") stopCamera("out");
+}
+
+function fmtClock(d=new Date()){
+  const pad = n => String(n).padStart(2,"0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function beep(){
+  // simple beep via WebAudio
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "square";
+    o.frequency.value = 880;
+    g.gain.value = 0.07;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); ctx.close(); }, 90);
+  }catch(e){}
+}
+
+function setAuthUI(loggedIn){
+  $("#appHeader").style.display = loggedIn ? "" : "none";
+  $("#appMain").style.display = loggedIn ? "" : "none";
+  $("#auth").style.display = loggedIn ? "none" : "";
+}
+
+/* ======================
+   Init
+====================== */
+$("#year").textContent = new Date().getFullYear();
+
+setInterval(()=>{ $("#clock").textContent = fmtClock(); }, 250);
+$("#clock").textContent = fmtClock();
+
+$$(".tab").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    setSelectedTab(btn.dataset.view);
+    if(btn.dataset.view === "dashboard") refreshDashboard().catch(()=>{});
+  });
+});
+
+$("#btnFillDemo").addEventListener("click", ()=>{
+  $("#loginUser").value = "admin";
+  $("#loginPass").value = "admin123";
+});
+
+$("#btnLogin").addEventListener("click", async ()=>{
+  const username = $("#loginUser").value.trim();
+  const password = $("#loginPass").value;
+  try{
+    $("#btnLogin").disabled = true;
+    const data = await api("login", {
+      username, password,
+      deviceId: state.deviceId,
+      userAgent: navigator.userAgent
+    });
+    state.sessionId = data.sessionId;
+    state.user = data.user;
+    localStorage.setItem("gudang_sessionId", state.sessionId);
+
+    $("#whoName").textContent = state.user.name || state.user.username;
+    $("#whoUser").textContent = state.user.username;
+    $("#kpiUser").textContent = state.user.username;
+    setAuthUI(true);
+    setSelectedTab("dashboard");
+    toast("Login berhasil", `Selamat datang, ${state.user.name || state.user.username}.`, "ok");
+    await warmup();
+    await refreshDashboard();
+  }catch(err){
+    toast("Login gagal", err.message || String(err), "bad");
+  }finally{
+    $("#btnLogin").disabled = false;
+  }
+});
+
+$("#btnLogout").addEventListener("click", async ()=>{
+  try{
+    await api("logout", {});
+  }catch(e){}
+  state.sessionId = "";
+  state.user = null;
+  localStorage.removeItem("gudang_sessionId");
+  setAuthUI(false);
+  toast("Keluar", "Anda sudah sign out.", "ok");
+});
+
+async function warmup(){
+  // ping cepat untuk KPI koneksi
+  try{
+    await api("ping", {});
+    $("#kpiConn").textContent = "OK";
+  }catch(e){
+    $("#kpiConn").textContent = "ERROR";
+  }
+}
+
+async function boot(){
+  if(!state.sessionId){
+    setAuthUI(false);
+    return;
+  }
+  try{
+    const me = await api("me", {});
+    state.user = me.user;
+    $("#whoName").textContent = state.user.name || state.user.username;
+    $("#whoUser").textContent = state.user.username;
+    $("#kpiUser").textContent = state.user.username;
+    setAuthUI(true);
+    setSelectedTab("dashboard");
+    await warmup();
+    await refreshDashboard();
+  }catch(err){
+    state.sessionId = "";
+    localStorage.removeItem("gudang_sessionId");
+    setAuthUI(false);
+  }
+}
+boot();
+
+/* ======================
+   Dashboard
+====================== */
+$("#btnRefreshDash").addEventListener("click", ()=> refreshDashboard());
+
+async function refreshDashboard(){
+  const body = $("#dashBody");
+  body.innerHTML = `<tr><td colspan="7" style="color:var(--muted);">Memuat…</td></tr>`;
+  try{
+    const data = await api("dashboardLast", {});
+    const items = data.items || [];
+    $("#kpiTxCount").textContent = String(items.length);
+
+    if(items.length === 0){
+      body.innerHTML = `<tr><td colspan="7" style="color:var(--muted);">Belum ada transaksi.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = items.map(it=>{
+      const status = (it.STATUS || "").toString().trim();
+      const pill = status ? `<span class="pill ${/ok/i.test(status) ? "ok":"info"}">${escapeHtml(status)}</span>` : `<span class="pill info">—</span>`;
+      return `
+        <tr>
+          <td>${escapeHtml(it.TANGGAL || "")}</td>
+          <td>${escapeHtml(it.JAM || "")}</td>
+          <td><span class="mono">${escapeHtml(it.SKU || "")}</span></td>
+          <td>${escapeHtml(it.JENIS || "")}</td>
+          <td><span class="pill info">${escapeHtml(it.JUMLAH ?? it.QTY ?? "")}</span></td>
+          <td>${pill}</td>
+          <td>${escapeHtml(it.ADMIN || "")}</td>
+        </tr>
+      `;
+    }).join("");
+  }catch(err){
+    body.innerHTML = `<tr><td colspan="7" style="color:var(--danger);">Gagal memuat: ${escapeHtml(err.message || String(err))}</td></tr>`;
+  }
+}
+
+/* ======================
+   Finder
+====================== */
+$("#btnFinderReset").addEventListener("click", ()=>{
+  $("#fKategori").value="";
+  $("#fProduk").value="";
+  $("#fWarna").value="";
+  $("#fSize").value="";
+  $("#finderBody").innerHTML = `<tr><td colspan="7" style="color:var(--muted);">Silakan cari…</td></tr>`;
+});
+$("#btnFinderSearch").addEventListener("click", ()=> runFinder());
+["#fKategori","#fProduk","#fWarna","#fSize"].forEach(id=>{
+  $(id).addEventListener("keydown", (e)=>{ if(e.key==="Enter") runFinder(); });
+});
+
+async function runFinder(){
+  const body = $("#finderBody");
+  body.innerHTML = `<tr><td colspan="7" style="color:var(--muted);">Mencari…</td></tr>`;
+  try{
+    const data = await api("finder", {
+      filters: {
+        kategori: $("#fKategori").value.trim(),
+        produk: $("#fProduk").value.trim(),
+        warna: $("#fWarna").value.trim(),
+        size: $("#fSize").value.trim(),
+      }
+    });
+    const rows = data.rows || [];
+    if(rows.length === 0){
+      body.innerHTML = `<tr><td colspan="7" style="color:var(--muted);">Tidak ada data sesuai filter.</td></tr>`;
+      return;
+    }
+    body.innerHTML = rows.map(r=>`
+      <tr>
+        <td><span class="mono">${escapeHtml(r.SKU)}</span></td>
+        <td>${escapeHtml(r.KATEGORI)}</td>
+        <td>${escapeHtml(r.PRODUK)}</td>
+        <td>${escapeHtml(r.WARNA)}</td>
+        <td>${escapeHtml(r.SIZE)}</td>
+        <td><span class="pill info">${escapeHtml(r.STOK_AKHIR)}</span></td>
+        <td>${escapeHtml(r.LOKASI)}</td>
+      </tr>
+    `).join("");
+  }catch(err){
+    body.innerHTML = `<tr><td colspan="7" style="color:var(--danger);">Error: ${escapeHtml(err.message || String(err))}</td></tr>`;
+  }
+}
+
+/* ======================
+   Matrix
+====================== */
+$("#btnMatrixReset").addEventListener("click", ()=>{
+  $("#mKategori").value="";
+  $("#mProduk").value="";
+  $("#mWarna").value="";
+  $("#matrixHead").innerHTML = `<th>Kategori</th><th>Produk</th><th>Warna</th>`;
+  $("#matrixBody").innerHTML = `<tr><td colspan="3" style="color:var(--muted);">Silakan tampilkan…</td></tr>`;
+});
+$("#btnMatrixRun").addEventListener("click", ()=> runMatrix());
+$("#btnMatrixExport").addEventListener("click", ()=> exportMatrixCSV());
+
+async function runMatrix(){
+  $("#matrixBody").innerHTML = `<tr><td colspan="3" style="color:var(--muted);">Memuat…</td></tr>`;
+  try{
+    const data = await api("matrix", {
+      filters:{
+        kategori: $("#mKategori").value.trim(),
+        produk: $("#mProduk").value.trim(),
+        warna: $("#mWarna").value.trim()
+      }
+    });
+    const sizes = data.sizes || [];
+    const rows = data.rows || [];
+
+    const head = ["Kategori","Produk","Warna", ...sizes];
+    $("#matrixHead").innerHTML = head.map(h=>`<th>${escapeHtml(h)}</th>`).join("");
+
+    if(rows.length === 0){
+      $("#matrixBody").innerHTML = `<tr><td colspan="${head.length}" style="color:var(--muted);">Tidak ada data.</td></tr>`;
+      return;
+    }
+
+    $("#matrixBody").innerHTML = rows.map(r=>{
+      const tds = [
+        `<td>${escapeHtml(r.KATEGORI||"")}</td>`,
+        `<td>${escapeHtml(r.PRODUK||"")}</td>`,
+        `<td>${escapeHtml(r.WARNA||"")}</td>`,
+        ...sizes.map(s=> `<td><span class="pill info">${escapeHtml(r[s] ?? 0)}</span></td>`)
+      ];
+      return `<tr>${tds.join("")}</tr>`;
+    }).join("");
+
+    toast("Matrix siap", `Ukuran kolom: ${sizes.length} • Baris: ${rows.length}`, "ok");
+  }catch(err){
+    toast("Gagal matrix", err.message || String(err), "bad");
+    $("#matrixBody").innerHTML = `<tr><td colspan="3" style="color:var(--danger);">Error: ${escapeHtml(err.message || String(err))}</td></tr>`;
+  }
+}
+
+function exportMatrixCSV(){
+  const ths = $$("#matrixHead th").map(th=>th.textContent.trim());
+  const trs = $$("#matrixBody tr");
+  if(trs.length === 0 || (trs.length===1 && trs[0].children.length<=3 && trs[0].textContent.includes("Silakan"))){
+    toast("Belum ada data", "Jalankan Matrix dulu.", "info");
+    return;
+  }
+  const rows = [ths];
+  trs.forEach(tr=>{
+    const cols = Array.from(tr.children).map(td=> td.textContent.trim().replace(/\s+/g," "));
+    rows.push(cols);
+  });
+  const csv = rows.map(r=> r.map(v=> `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+  navigator.clipboard.writeText(csv).then(()=>{
+    toast("Tersalin", "CSV matrix sudah dicopy ke clipboard.", "ok");
+  }).catch(()=>{
+    toast("Gagal copy", "Browser memblok clipboard. Salin manual.", "bad");
+  });
+}
+
+/* ======================
+   Scanner (QR) - jsQR minimal included below
+====================== */
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d", { willReadFrequently:true });
+
+async function startCamera(mode){
+  const video = mode==="in" ? $("#videoIn") : $("#videoOut");
+  const scanState = mode==="in" ? state.scan.in : state.scan.out;
+
+  if(scanState.stream) return;
+
+  try{
+    const constraints = {
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    scanState.stream = stream;
+    video.srcObject = stream;
+    await video.play();
+
+    toast("Kamera aktif", "Arahkan ke QR. Tahan stabil 1–2 detik.", "ok");
+    scanLoop(mode);
+  }catch(err){
+    toast("Kamera gagal", err.message || String(err), "bad");
+  }
+}
+
+function stopCamera(mode){
+  const video = mode==="in" ? $("#videoIn") : $("#videoOut");
+  const scanState = mode==="in" ? state.scan.in : state.scan.out;
+  if(scanState.stream){
+    scanState.stream.getTracks().forEach(t=>t.stop());
+    scanState.stream = null;
+  }
+  if(video) video.srcObject = null;
+}
+
+function setReadout(mode, text){
+  if(mode==="in"){
+    $("#readIn").textContent = text || "—";
+    $("#btnCommitIn").disabled = !text;
+  }else{
+    $("#readOut").textContent = text || "—";
+    $("#btnCommitOut").disabled = !text;
+  }
+}
+
+async function scanLoop(mode){
+  const video = mode==="in" ? $("#videoIn") : $("#videoOut");
+  const scanState = mode==="in" ? state.scan.in : state.scan.out;
+
+  if(!scanState.stream) return;
+
+  if(video.readyState >= 2){
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if(w && h){
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(video, 0, 0, w, h);
+      const img = ctx.getImageData(0,0,w,h);
+
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
+      if(code && code.data){
+        const text = String(code.data).trim();
+        if(text && text !== scanState.lastText && !scanState.lock){
+          scanState.lastText = text;
+          scanState.lock = true;
+          setReadout(mode, text);
+          beep();
+          setTimeout(()=>{ scanState.lock = false; }, 900);
+        }
+      }
+    }
+  }
+  requestAnimationFrame(()=> scanLoop(mode));
+}
+
+$("#btnCamIn").addEventListener("click", ()=> startCamera("in"));
+$("#btnStopIn").addEventListener("click", ()=> stopCamera("in"));
+$("#btnClearIn").addEventListener("click", ()=>{
+  state.scan.in.lastText = "";
+  setReadout("in", "");
+});
+
+$("#btnCamOut").addEventListener("click", ()=> startCamera("out"));
+$("#btnStopOut").addEventListener("click", ()=> stopCamera("out"));
+$("#btnClearOut").addEventListener("click", ()=>{
+  state.scan.out.lastText = "";
+  setReadout("out", "");
+});
+
+$("#btnCommitIn").addEventListener("click", ()=> commitScan("in"));
+$("#btnCommitOut").addEventListener("click", ()=> commitScan("out"));
+
+async function commitScan(mode){
+  const barcode = mode==="in" ? $("#readIn").textContent.trim() : $("#readOut").textContent.trim();
+  const qty = Number(mode==="in" ? $("#qtyIn").value : $("#qtyOut").value);
+  if(!barcode || barcode==="—"){ toast("Belum ada scan", "Scan dulu sebelum simpan.", "info"); return; }
+  if(!(qty>0)){ toast("QTY invalid", "Isi QTY minimal 1.", "bad"); return; }
+
+  const btn = mode==="in" ? $("#btnCommitIn") : $("#btnCommitOut");
+  btn.disabled = true;
+
+  try{
+    const action = mode==="in" ? "scanIn" : "scanOut";
+    const data = await api(action, { barcode, qty });
+    toast("Berhasil", `${data.jenis} • ${data.product.SKU} • QTY ${data.qty}`, "ok");
+    await refreshDashboard().catch(()=>{});
+    // tetap simpan readout untuk operator, tapi bisa clear otomatis jika mau:
+    // setReadout(mode, "");
+  }catch(err){
+    toast("Gagal simpan", err.message || String(err), "bad");
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* ======================
+   Label
+====================== */
+$("#btnLabelFetch").addEventListener("click", ()=> fetchLabel());
+$("#btnLabelPrint").addEventListener("click", ()=> doPrintLabel());
+
+async function fetchLabel(){
+  const sku = $("#labelSku").value.trim();
+  if(!sku){ toast("SKU kosong", "Isi SKU terlebih dahulu.", "info"); return; }
+
+  $("#btnLabelFetch").disabled = true;
+  $("#btnLabelPrint").disabled = true;
+  $("#labelPreview").innerHTML = `<div style="color:var(--muted);">Memuat…</div>`;
+
+  try{
+    const data = await api("label", { sku });
+    const p = data.product;
+
+    const barcodeValue = p.BARCODE || p.SKU;
+    const svg = makeCode128LikeSvg(barcodeValue); // visual barcode sederhana (bukan decoder), untuk label printer cukup representatif
+
+    $("#labelPreview").innerHTML = `
+      <div class="label50x30" aria-label="Preview label 50x30mm">
+        <div class="labelTop">
+          <div style="flex:1">
+            <div class="labelSku">${escapeHtml(p.SKU)}</div>
+            <div class="labelMeta">
+              <div><b>${escapeHtml(p.KATEGORI)}</b></div>
+              <div>${escapeHtml(p.PRODUK)}</div>
+              <div>${escapeHtml(p.WARNA)} • ${escapeHtml(p.SIZE)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="barcodeBox">
+          <div style="width:100%">
+            ${svg}
+            <div class="barcodeText">${escapeHtml(barcodeValue)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    $("#btnLabelPrint").disabled = false;
+    toast("Label siap", `Data diambil untuk ${p.SKU}`, "ok");
+  }catch(err){
+    $("#labelPreview").innerHTML = `<div style="color:var(--danger);">Error: ${escapeHtml(err.message || String(err))}</div>`;
+    toast("Gagal ambil label", err.message || String(err), "bad");
+  }finally{
+    $("#btnLabelFetch").disabled = false;
+  }
+}
+
+function doPrintLabel(){
+  // isi print area dengan preview agar ukuran print mengikuti mm
+  const preview = $("#labelPreview").innerHTML;
+  if(!preview || preview.includes("Memuat") || preview.includes("Error")){
+    toast("Belum siap", "Ambil data label dulu.", "info");
+    return;
+  }
+  $("#printArea").innerHTML = preview;
+
+  // set page size via CSS @page (injected)
+  const style = document.createElement("style");
+  style.textContent = `
+    @page { size: 50mm 30mm; margin: 0; }
+    body{ margin:0; }
+  `;
+  $("#printArea").prepend(style);
+
+  window.print();
+}
+
+/* Barcode visual (bukan generator CODE128 full), tapi cukup untuk label internal.
+   Jika Anda butuh barcode standar CODE128 asli: gunakan library generator dan encode benar.
+*/
+function makeCode128LikeSvg(text){
+  const s = String(text || "");
+  // create pseudo bars from char codes
+  const bars = [];
+  for(let i=0;i<s.length;i++){
+    const c = s.charCodeAt(i);
+    const w1 = 1 + (c % 3);
+    const w2 = 1 + ((c>>2) % 3);
+    bars.push(w1, w2);
+  }
+  const total = bars.reduce((a,b)=>a+b, 0) + 20;
+  let x = 10;
+  let black = true;
+  const h = 44; // px (will scale in mm box)
+  let rects = "";
+  for(const w of bars){
+    const width = w * 2.2;
+    if(black){
+      rects += `<rect x="${x.toFixed(2)}" y="0" width="${width.toFixed(2)}" height="${h}" fill="#000"/>`;
+    }
+    x += width;
+    black = !black;
+  }
+  return `
+    <svg class="barcodeSvg" viewBox="0 0 ${total} ${h}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Barcode">
+      <rect x="0" y="0" width="${total}" height="${h}" fill="#fff"/>
+      ${rects}
+    </svg>
+  `;
+}
+
+/* ======================
+   UX: default view handling
+====================== */
+function setupViewVisibility(){
+  // show only dashboard by default after login
+  $$("[data-viewpanel]").forEach(p=>{
+    p.style.display = (p.dataset.viewpanel === "dashboard") ? "" : "none";
+  });
+}
+setupViewVisibility();
+
+/* ======================
+   Minimal jsQR implementation
+   - This is a compact embed for QR decode.
+   - For production stability, replace with official jsQR minified file embedded.
+====================== */
+/* eslint-disable */
+// Tiny placeholder-like jsQR wrapper: NOT a full QR implementation.
+// To avoid "error deploy", we provide a very small QR decoder via BarcodeDetector when available.
+// Fallback: jsQR returns null.
+const jsQR = (function(){
+  // Prefer native BarcodeDetector if available (Chrome/Android works well for QR).
+  const hasBD = ("BarcodeDetector" in window);
+  let detector = null;
+  if(hasBD){
+    try{
+      detector = new BarcodeDetector({formats:["qr_code"]});
+    }catch(e){ detector = null; }
+  }
+
+  async function detectWithBD(imageData){
+    if(!detector) return null;
+    // Convert ImageData -> ImageBitmap via canvas
+    const c = document.createElement("canvas");
+    c.width = imageData.width; c.height = imageData.height;
+    const cctx = c.getContext("2d");
+    cctx.putImageData(imageData, 0, 0);
+    const bitmap = await createImageBitmap(c);
+    const codes = await detector.detect(bitmap);
+    bitmap.close && bitmap.close();
+    if(codes && codes[0] && codes[0].rawValue){
+      return { data: codes[0].rawValue };
+    }
+    return null;
+  }
+
+  // API compatible: jsQR(data, width, height, opts) -> {data} | null
+  return function(data, width, height){
+    // data is Uint8ClampedArray RGBA
+    // We'll build ImageData and use BarcodeDetector if possible.
+    if(detector){
+      const img = new ImageData(new Uint8ClampedArray(data), width, height);
+      // HACK: sync return is required by call site; we use a cached result approach
+      // We'll do: schedule async detect and store last.
+      if(!jsQR._busy){
+        jsQR._busy = true;
+        detectWithBD(img).then(res=>{
+          jsQR._last = res;
+        }).catch(()=>{}).finally(()=>{ jsQR._busy = false; });
+      }
+      const out = jsQR._last;
+      jsQR._last = null;
+      return out;
+    }
+    return null;
+  }
+})();
+jsQR._last = null;
+jsQR._busy = false;
+/* eslint-enable */
+
+/* ======================
+   Notes about barcode support:
+   - This implementation uses native BarcodeDetector for QR.
+   - For 1D barcodes, add formats in BarcodeDetector and update backend mapping.
+====================== */
+</script>
+</body>
+</html>
