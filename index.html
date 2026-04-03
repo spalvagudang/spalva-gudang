@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Gudang — Dashboard, Finder, Matrix, Barang Masuk/Keluar</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* (CSS sama persis seperti di kode sebelumnya, tidak saya ulang di sini untuk ringkas) */
+    /* Silakan salin seluruh CSS dari kode frontend yang saya berikan sebelumnya */
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Gudang</h1>
+        <p>Dashboard • Finder • Matrix • Barang Masuk/Keluar</p>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="pill" title="Ganti URL Web App Google Apps Script Anda">
+        <span class="mono" style="font-size:12px;color:var(--muted)">API</span>
+        <input id="apiInput" type="text" spellcheck="false" placeholder="Tempel URL Web App GAS...">
+      </div>
+      <div class="tag" title="Status koneksi ke backend">
+        <span id="connDot" class="dot offline" aria-hidden="true"></span>
+        <span id="connText">Belum terhubung</span>
+      </div>
+    </div>
+  </div>
+
+  <nav aria-label="Navigasi fitur">
+    <button class="tab" role="tab" data-tab="dashboard" aria-selected="true">Dashboard</button>
+    <button class="tab" role="tab" data-tab="finder">Finder Produk</button>
+    <button class="tab" role="tab" data-tab="matrix">Matrix Produk</button>
+    <button class="tab" role="tab" data-tab="masuk">Barang Masuk</button>
+    <button class="tab" role="tab" data-tab="keluar">Barang Keluar</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <!-- Semua section dan elemen HTML sama persis seperti di kode frontend sebelumnya -->
+  <!-- Silakan salin seluruh bagian <main> dari kode frontend yang saya berikan sebelumnya -->
+</main>
+
+<div class="toastHost" id="toastHost" aria-live="polite" aria-relevant="additions"></div>
+
+<script>
+  // =========================
+  // CONFIG
+  // =========================
+  const STORAGE_KEY_API = "gudang_api_base_v1";
+
+  // Set default API URL (Anda wajib ganti saat deploy)
+  // Contoh: https://script.google.com/macros/s/XXXX/exec
+  let API_BASE = "https://script.google.com/macros/s/AKfycbxMEhONqvxx24yzVtdkJaQpOJ5yRJiFKkrjdupgIhbOPT8mOjGLDiTQIpDpZ_JgyW8q4Q/exec";
+
+  // =========================
+  // UTIL
+  // =========================
+  const $ = (q, el=document) => el.querySelector(q);
+  const $$ = (q, el=document) => Array.from(el.querySelectorAll(q));
+
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function toCSV(rows, headers){
+    const head = headers.map(h => `"${String(h).replaceAll('"','""')}"`).join(",");
+    const lines = rows.map(r => headers.map(h => `"${String(r[h] ?? "").replaceAll('"','""')}"`).join(","));
+    return [head, ...lines].join("\n");
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function toast(type, title, msg){
+    const host = $("#toastHost");
+    const t = document.createElement("div");
+    t.className = `toast ${type || ""}`;
+    t.innerHTML = `
+      <div class="ic" aria-hidden="true">
+        ${type==="ok" ? "✓" : type==="bad" ? "!" : "i"}
+      </div>
+      <div class="txt">
+        <b>${esc(title)}</b>
+        <span>${esc(msg)}</span>
+      </div>
+      <button class="x" aria-label="Tutup">✕</button>
+    `;
+    const close = () => { t.style.opacity = "0"; t.style.transform = "translateY(6px)"; setTimeout(()=>t.remove(), 200); };
+    t.querySelector(".x").addEventListener("click", close);
+    host.appendChild(t);
+    setTimeout(close, 4200);
+  }
+
+  function setConn(ok, text){
+    const dot = $("#connDot");
+    const lbl = $("#connText");
+    dot.classList.toggle("offline", !ok);
+    lbl.textContent = text;
+  }
+
+  async function apiFetch(action, payload={}, method="POST"){
+    if(!API_BASE) throw new Error("API belum di-set. Tempel URL Web App GAS di bagian API.");
+    const url = API_BASE + (API_BASE.includes("?") ? "&" : "?") + "v=1";
+    const res = await fetch(url, {
+      method,
+      headers: {"Content-Type":"application/json"},
+      body: method==="GET" ? undefined : JSON.stringify({action, ...payload})
+    });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if(!data || data.ok !== true) throw new Error(data?.error || "Gagal memproses.");
+    return data;
+  }
+
+  function setOptions(selectEl, items, {allowAll=true, allLabel="Semua"} = {}){
+    const cur = selectEl.value;
+    const opts = [];
+    if(allowAll) opts.push({value:"", label: allLabel});
+    for(const it of items){
+      const v = String(it ?? "");
+      if(!v) continue;
+      opts.push({value:v, label:v});
+    }
+    selectEl.innerHTML = opts.map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
+    // Try keep value
+    if(opts.some(o => o.value === cur)) selectEl.value = cur;
+  }
+
+  function renderTable(container, columns, rows, {maxRowsNote=true} = {}){
+    if(!rows || rows.length===0){
+      container.innerHTML = `<div style="padding:14px 16px; color:var(--muted); font-size:13px">Tidak ada data.</div>`;
+      return;
+    }
+    const thead = columns.map(c => `<th class="${c.nowrap?'nowrap':''}">${esc(c.label)}</th>`).join("");
+    const tbody = rows.map(r => {
+      const tds = columns.map(c => {
+        let v = r[c.key];
+        if(c.render) v = c.render(v, r);
+        return `<td class="${c.nowrap?'nowrap':''}">${v ?? ""}</td>`;
+      }).join("");
+      return `<tr>${tds}</tr>`;
+    }).join("");
+
+    container.innerHTML = `
+      <table role="table" aria-label="Tabel data">
+        <thead><tr>${thead}</tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    `;
+  }
+
+  // =========================
+  // STATE
+  // =========================
+  const state = {
+    finderLastRows: [],
+    matrixLastRows: [],
+    lastMeta: null,
+    filterCache: {
+      finder: null,
+      matrix: null,
+      masuk: null,
+      keluar: null
+    }
+  };
+
+  // =========================
+  // NAV
+  // =========================
+  function activateTab(id){
+    $$(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
+    $$("main section").forEach(s => s.classList.toggle("active", s.id===id));
+    history.replaceState(null, "", "#" + id);
+  }
+  $$(".tab").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
+  window.addEventListener("load", () => {
+    const hash = location.hash.replace("#","");
+    if(hash && $("#"+hash)) activateTab(hash);
+  });
+
+  // =========================
+  // INIT UI
+  // =========================
+  $("#year").textContent = new Date().getFullYear();
+  const apiInput = $("#apiInput");
+  apiInput.value = API_BASE;
+
+  apiInput.addEventListener("change", async () => {
+    API_BASE = apiInput.value.trim();
+    localStorage.setItem(STORAGE_KEY_API, API_BASE);
+    await ping();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "/" && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName)){
+      e.preventDefault();
+      $("#qQuick").focus();
+    }
+    if((e.key === "r" || e.key==="R") && !e.ctrlKey && !e.metaKey && !e.altKey){
+      // refresh dashboard
+      if($("#dashboard").classList.contains("active")){
+        e.preventDefault();
+        loadDashboard();
+      }
+    }
+  });
+
+  // =========================
+  // BACKEND PING + BOOT
+  // =========================
+  async function ping(){
+    if(!API_BASE){
+      setConn(false, "Tempel URL Web App");
+      return false;
+    }
+    try{
+      const data = await apiFetch("ping", {}, "POST");
+      setConn(true, `Terhubung • ${data.app?.name || "GAS"} • ${data.app?.time || ""}`);
+      $("#kpiCache").textContent = data.cache?.enabled ? "Aktif" : "Nonaktif";
+      return true;
+    }catch(err){
+      setConn(false, "Gagal terhubung");
+      toast("bad","Tidak bisa terhubung", String(err.message || err));
+      return false;
+    }
+  }
+
+  // =========================
+  // DASHBOARD
+  // =========================
+  const dashCols = [
+    {key:"TIMESTAMP", label:"Waktu", nowrap:true, render:(v)=>`<span class="mono nowrap">${esc(v)}</span>`},
+    {key:"SKU", label:"SKU", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+    {key:"JUMLAH", label:"Jumlah", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+    {key:"STATUS", label:"Status", nowrap:true, render:(v)=>{
+      const s = String(v||"").toLowerCase();
+      const cls = s==="masuk" ? "in" : s==="keluar" ? "out" : "";
+      return `<span class="badge ${cls}"><span class="bDot"></span>${esc(v||"")}</span>`;
+    }},
+    {key:"PRODUK", label:"Produk"},
+    {key:"WARNA", label:"Warna", nowrap:true},
+    {key:"SIZE", label:"Size", nowrap:true},
+    {key:"LOKASI", label:"Lokasi", nowrap:true}
+  ];
+
+  async function loadDashboard(){
+    $("#dashTable").innerHTML = `
+      <div style="padding:14px 16px">
+        <div class="skeleton skBig"></div>
+        <div class="skeleton skRow"></div>
+        <div class="skeleton skRow"></div>
+        <div class="skeleton skRow"></div>
+      </div>
+    `;
+    try{
+      const data = await apiFetch("getDashboard", {limit: 30});
+      renderTable($("#dashTable"), dashCols, data.rows || []);
+      $("#kpiSku").textContent = data.kpi?.totalSku ?? "—";
+      $("#kpi24").textContent = data.kpi?.trx24h ?? "—";
+      state.lastMeta = data.meta || null;
+    }catch(err){
+      $("#dashTable").innerHTML = `<div style="padding:14px 16px; color:var(--bad); font-size:13px">Gagal memuat: ${esc(err.message||err)}</div>`;
+    }
+  }
+  $("#btnRefreshDash").addEventListener("click", loadDashboard);
+
+  // Quick search (server-side)
+  async function quickSearch(){
+    const q = $("#qQuick").value.trim();
+    if(!q){ toast("info","Isi kata kunci","Masukkan SKU atau teks produk."); return; }
+    $("#quickRes").innerHTML = `<div class="skeleton skBig"></div><div class="skeleton skRow"></div><div class="skeleton skRow"></div>`;
+    try{
+      const data = await apiFetch("findProducts", {filters:{q}, limit: 30});
+      const cols = [
+        {key:"SKU", label:"SKU", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+        {key:"KATEGORI", label:"Kategori"},
+        {key:"PRODUK", label:"Produk"},
+        {key:"WARNA", label:"Warna", nowrap:true},
+        {key:"SIZE", label:"Size", nowrap:true},
+        {key:"STOK_AKHIR", label:"Stok", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+        {key:"LOKASI", label:"Lokasi", nowrap:true}
+      ];
+      renderTable($("#quickRes").parentElement, cols, data.rows || []);
+      // renderTable replaces container itself; restore structure: easier to just target wrapper
+      // We'll re-wrap: quickRes is inside tableWrap; use parentElement as tableWrap
+    }catch(err){
+      $("#quickRes").innerHTML = `<span style="color:var(--bad)">Gagal: ${esc(err.message||err)}</span>`;
+    }
+  }
+  // Fix quick table target properly
+  function resetQuickContainer(){
+    const wrap = $("#quickRes").parentElement;
+    wrap.innerHTML = `<div id="quickRes" style="padding:14px 16px; color:var(--muted); font-size:13px">Hasil akan muncul di sini.</div>`;
+  }
+  $("#btnQuick").addEventListener("click", async()=>{
+    const wrap = $("#quickRes").parentElement;
+    wrap.innerHTML = `<div style="padding:14px 16px"><div class="skeleton skBig"></div><div class="skeleton skRow"></div><div class="skeleton skRow"></div></div>`;
+    try{
+      const q = $("#qQuick").value.trim();
+      const data = await apiFetch("findProducts", {filters:{q}, limit: 30});
+      const cols = [
+        {key:"SKU", label:"SKU", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+        {key:"KATEGORI", label:"Kategori"},
+        {key:"PRODUK", label:"Produk"},
+        {key:"WARNA", label:"Warna", nowrap:true},
+        {key:"SIZE", label:"Size", nowrap:true},
+        {key:"STOK_AKHIR", label:"Stok", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+        {key:"LOKASI", label:"Lokasi", nowrap:true}
+      ];
+      renderTable(wrap, cols, data.rows || []);
+    }catch(err){
+      resetQuickContainer();
+      $("#quickRes").innerHTML = `<span style="color:var(--bad)">Gagal: ${esc(err.message||err)}</span>`;
+    }
+  });
+  $("#btnQuickClear").addEventListener("click", ()=>{
+    $("#qQuick").value = "";
+    resetQuickContainer();
+  });
+
+  // =========================
+  // FILTER LOADING (server-side index)
+  // =========================
+  async function loadFilters(kind){
+    const map = {
+      finder: {k:"#fKategori", p:"#fProduk", w:"#fWarna", s:"#fSize"},
+      matrix:  {k:"#mKategori", p:"#mProduk", w:"#mWarna"},
+      masuk:   {k:"#inKategori", p:"#inProduk", w:"#inWarna", s:"#inSize"},
+      keluar:  {k:"#outKategori", p:"#outProduk", w:"#outWarna", s:"#outSize"},
+    }[kind];
+
+    for(const key of ["k","p","w","s"]){
+      const sel = map[key] ? $(map[key]) : null;
+      if(sel) sel.innerHTML = `<option value="">Memuat…</option>`;
+    }
+
+    const data = await apiFetch("getIndex", {kind});
+    state.filterCache[kind] = data.index;
+
+    // Populate initial with all lists
+    if(map.k) setOptions($(map.k), data.index.kategori || [], {allowAll:true});
+    if(map.p) setOptions($(map.p), data.index.produk || [], {allowAll:true});
+    if(map.w) setOptions($(map.w), data.index.warna || [], {allowAll:true});
+    if(map.s) setOptions($(map.s), data.index.size || [], {allowAll:true});
+
+    // Cascading: update children based on selected
+    const updateCascade = () => {
+      const idx = state.filterCache[kind];
+      if(!idx) return;
+
+      const kategori = map.k ? $(map.k).value : "";
+      const produk   = map.p ? $(map.p).value : "";
+      const warna    = map.w ? $(map.w).value : "";
+
+      // Derive options using server-provided maps if exist
+      // idx.maps: { kp: {KATEGORI:{produk[]}}, kpw: {KATEGORI|PRODUK:{warna[]}}, kpwS: {KATEGORI|PRODUK|WARNA:{size[]}} }
+      if(map.p){
+        const list = kategori ? (idx.maps?.kp?.[kategori] || []) : (idx.produk || []);
+        setOptions($(map.p), list, {allowAll:true});
+      }
+      if(map.w){
+        const key = (kategori && produk) ? `${kategori}||${produk}` : "";
+        const list = key ? (idx.maps?.kpw?.[key] || []) : (idx.warna || []);
+        setOptions($(map.w), list, {allowAll:true});
+      }
+      if(map.s){
+        const key = (kategori && produk && warna) ? `${kategori}||${produk}||${warna}` : "";
+        const list = key ? (idx.maps?.kpwS?.[key] || []) : (idx.size || []);
+        setOptions($(map.s), list, {allowAll:true});
+      }
+    };
+
+    // Attach listeners once
+    if(map.k) $(map.k).onchange = updateCascade;
+    if(map.p) $(map.p).onchange = updateCascade;
+    if(map.w) $(map.w).onchange = updateCascade;
+
+    updateCascade();
+    toast("ok","Filter siap","Pilihan kategori/produk/warna/size sudah dimuat.");
+  }
+
+  // =========================
+  // FINDER
+  // =========================
+  const finderCols = [
+    {key:"SKU", label:"SKU", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+    {key:"KATEGORI", label:"Kategori"},
+    {key:"PRODUK", label:"Produk"},
+    {key:"WARNA", label:"Warna", nowrap:true},
+    {key:"SIZE", label:"Size", nowrap:true},
+    {key:"STOK_AKHIR", label:"Stok Akhir", nowrap:true, render:(v)=>`<span class="mono">${esc(v)}</span>`},
+    {key:"LOKASI", label:"Lokasi", nowrap:true}
+  ];
+
+  $("#btnLoadFinder").addEventListener("click", async()=>{
+    try{ await loadFilters("finder"); }
+    catch(err){ toast("bad","Gagal memuat filter", err.message||String(err)); }
+  });
+
+  $("#btnSearchFinder").addEventListener("click", async()=>{
+    const filters = {
+      kategori: $("#fKategori").value,
+      produk: $("#fProduk").value,
+      warna: $("#fWarna").value,
+      size: $("#fSize").value,
+      q: $("#fQ").value.trim()
+    };
+    $("#finderTable").innerHTML = `<div style="padding:14px 16px"><div class="skeleton skBig"></div><div class="skeleton skRow"></div><div class="skeleton skRow"></div><div class="skeleton skRow"></div></div>`;
+    try{
+      const data = await apiFetch("findProducts", {filters, limit: 1000});
+      state.finderLastRows = data.rows || [];
+      renderTable($("#finderTable"), finderCols, state.finderLastRows);
+      $("#finderMeta").textContent = `Menampilkan ${state.finderLastRows.length} baris • Terakhir update: ${data.meta?.updatedAt || "-"}`;
+    }catch(err){
+      $("#finderTable").innerHTML = `<div style="padding:14px 16px; color:var(--bad); font-size:13px">Gagal: ${esc(err.message||err)}</div>`;
+    }
+  });
+
+  $("#btnFinderReset").addEventListener("click", ()=>{
+    $("#fKategori").value = "";
+    $("#fProduk").value = "";
+    $("#fWarna").value = "";
+    $("#fSize").value = "";
+    $("#fQ").value = "";
+    $("#finderMeta").textContent = "—";
+    $("#finderTable").innerHTML = `<div style="padding:14px 16px; color:var(--muted); font-size:13px">Klik <b>Muat Filter</b> lalu <b>Tampilkan</b>.</div>`;
+  });
+
+  $("#btnFinderCSV").addEventListener("click", ()=>{
+    if(!state.finderLastRows.length){
+      toast("info","Belum ada data","Jalankan Finder dulu, baru export.");
+      return;
+    }
+    const csv = toCSV(state.finderLastRows, ["SKU","KATEGORI","PRODUK","WARNA","SIZE","STOK_AKHIR","LOKASI"]);
+    downloadText(`finder_${new Date().toISOString().slice(0,10)}.csv`, csv);
+  });
+
+  // =========================
+  // MATRIX
+  // =========================
+  $("#btnLoadMatrix").addEventListener("click", async()=>{
+    try{ await loadFilters("matrix"); }
+    catch(err){ toast("bad","Gagal memuat filter", err.message||String(err)); }
+  });
+
+  function renderMatrix(matrix){
+    // matrix: {sizes:[], rows:[{KATEGORI,PRODUK,WARNA, bySize:{S:10,M:0}, total}]}
+    const sizes = matrix.sizes || [];
+    const cols = [
+      {key:"KATEGORI", label:"Kategori"},
+      {key:"PRODUK", label:"Produk"},
+      {key:"WARNA", label:"Warna", nowrap:true},
+      ...sizes.map(sz => ({
+        key: sz,
+        label: sz,
+        nowrap:true,
+        render: (v, r)=> `<span class="mono">${esc(r.bySize?.[sz] ?? 0)}</span>`
+      })),
+      {key:"TOTAL", label:"Total", nowrap:true, render:(v,r)=>`<span class="mono">${esc(r.total ?? 0)}</span>`}
+    ];
+
+    const rows = (matrix.rows || []).map(r => {
+      const out = {KATEGORI:r.KATEGORI, PRODUK:r.PRODUK, WARNA:r.WARNA, TOTAL:r.total};
+      for(const sz of sizes) out[sz] = r.bySize?.[sz] ?? 0;
+      out.bySize = r.bySize;
+      out.total = r.total;
+      return out;
+    });
+
+    renderTable($("#matrixTable"), cols, rows);
+  }
+
+  $("#btnShowMatrix").addEventListener("click", async()=>{
+    const filters = {
+      kategori: $("#mKategori").value,
+      produk: $("#mProduk").value,
+      warna: $("#mWarna").value
+    };
+    $("#matrixTable").innerHTML = `<div style="padding:14px 16px"><div class="skeleton skBig"></div><div class="skeleton skRow"></div><div class="skeleton skRow"></div><div class="skeleton skRow"></div></div>`;
+    try{
+      const data = await apiFetch("getMatrix", {filters});
+      state.matrixLastRows = data.matrix?.rows || [];
+      renderMatrix(data.matrix);
+      $("#matrixMeta").textContent = `Baris: ${state.matrixLastRows.length} • Sizes: ${(data.matrix?.sizes||[]).join(", ") || "-"} • Update: ${data.meta?.updatedAt || "-"}`;
+    }catch(err){
+      $("#matrixTable").innerHTML = `<div style="padding:14px 16px; color:var(--bad); font-size:13px">Gagal: ${esc(err.message||err)}</div>`;
+    }
+  });
+
+  $("#btnMatrixReset").addEventListener("click", ()=>{
+    $("#mKategori").value = "";
+    $("#mProduk").value = "";
+    $("#mWarna").value = "";
+    $("#matrixMeta").textContent = "—";
+    $("#matrixTable").innerHTML = `<div style="padding:14px 16px; color:var(--muted); font-size:13px">Klik <b>Muat Filter</b> lalu <b>Tampilkan</b>.</div>`;
+  });
+
+  $("#btnMatrixCSV").addEventListener("click", async()=>{
+    // Recreate a flat CSV from last rendered matrix call if possible by calling backend again? We'll export visible matrix by requesting again quickly
+    try{
+      const filters = { kategori: $("#mKategori").value, produk: $("#mProduk").value, warna: $("#mWarna").value };
+      const data = await apiFetch("getMatrix", {filters});
+      const sizes = data.matrix?.sizes || [];
+      const rows = (data.matrix?.rows || []).map(r => {
+        const o = {KATEGORI:r.KATEGORI, PRODUK:r.PRODUK, WARNA:r.WARNA};
+        for(const sz of sizes) o[sz] = r.bySize?.[sz] ?? 0;
+        o.TOTAL = r.total ?? 0;
+        return o;
+      });
+      if(!rows.length){ toast("info","Tidak ada data","Matrix kosong."); return; }
+      const csv = toCSV(rows, ["KATEGORI","PRODUK","WARNA", ...sizes, "TOTAL"]);
+      downloadText(`matrix_${new Date().toISOString().slice(0,10)}.csv`, csv);
+    }catch(err){
+      toast("bad","Gagal export", err.message||String(err));
+    }
+  });
+
+  // =========================
+  // TRANSAKSI (MASUK/KELUAR)
+  // =========================
+  async function loadTrxFilters(){
+    // load for masuk & keluar
+    await Promise.allSettled([loadFilters("masuk"), loadFilters("keluar")]);
+  }
+
+  function trxPayloadFrom(prefix){
+    const kategori = $(`#${prefix}Kategori`).value;
+    const produk   = $(`#${prefix}Produk`).value;
+    const warna    = $(`#${prefix}Warna`).value;
+    const size     = $(`#${prefix}Size`).value;
+    const jumlah   = Number($(`#${prefix}Jumlah`).value);
+    const lokasi   = $(`#${prefix}Lokasi`).value.trim();
+    const catatan  = $(`#${prefix}Catatan`).value.trim();
+
+    if(!kategori || !produk || !warna || !size) throw new Error("Lengkapi Kategori, Produk, Warna, dan Size.");
+    if(!Number.isFinite(jumlah) || jumlah <= 0) throw new Error("Jumlah harus angka > 0.");
+
+    return {kategori, produk, warna, size, jumlah, lokasi, catatan};
+  }
+
+  function trxReset(prefix){
+    $(`#${prefix}Kategori`).value = "";
+    $(`#${prefix}Produk`).value = "";
+    $(`#${prefix}Warna`).value = "";
+    $(`#${prefix}Size`).value = "";
+    $(`#${prefix}Jumlah`).value = "";
+    $(`#${prefix}Lokasi`).value = "";
+    $(`#${prefix}Catatan`).value = "";
+  }
+
+  async function submitTrx(status){
+    const isIn = status === "masuk";
+    const prefix = isIn ? "in" : "out";
+    const resultEl = isIn ? $("#inResult") : $("#outResult");
+    resultEl.innerHTML = `<div style="padding:14px 16px"><div class="skeleton skBig"></div><div class="skeleton skRow"></div></div>`;
+
+    let payload;
+    try{
+      payload = trxPayloadFrom(prefix);
+    }catch(err){
+      resultEl.innerHTML = `<div style="padding:14px 16px; color:var(--bad); font-size:13px">${esc(err.message||err)}</div>`;
+      return;
+    }
+
+    try{
+      const data = await apiFetch("recordTransaction", {status, ...payload});
+      toast("ok","Transaksi tersimpan", `SKU ${data.sku} • Stok baru: ${data.newStock}`);
+      resultEl.innerHTML = `
+        <div style="padding:14px 16px; font-size:13px">
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <span class="badge ${isIn?'in':'out'}"><span class="bDot"></span>${esc(status.toUpperCase())}</span>
+            <span class="mono">SKU: ${esc(data.sku)}</span>
+            <span class="mono">Stok baru: ${esc(data.newStock)}</span>
+          </div>
+          <div style="margin-top:10px; color:var(--muted)">
+            ${esc(data.message || "Berhasil.")}
+          </div>
+        </div>
+      `;
+      // Refresh dashboard quickly
+      loadDashboard().catch(()=>{});
+    }catch(err){
+      toast("bad","Transaksi gagal", err.message||String(err));
+      resultEl.innerHTML = `<div style="padding:14px 16px; color:var(--bad); font-size:13px">Gagal: ${esc(err.message||err)}</div>`;
+    }
+  }
+
+  $("#btnInSubmit").addEventListener("click", ()=>submitTrx("masuk"));
+  $("#btnOutSubmit").addEventListener("click", ()=>submitTrx("keluar"));
+  $("#btnInReset").addEventListener("click", ()=>trxReset("in"));
+  $("#btnOutReset").addEventListener("click", ()=>trxReset("out"));
+
+  // =========================
+  // BOOT
+  // =========================
+  (async function boot(){
+    const ok = await ping();
+    if(ok){
+      await Promise.allSettled([loadDashboard(), loadTrxFilters()]);
+    }
+  })();
+</script>
+
+</body>
+</html>
