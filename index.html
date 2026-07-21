@@ -1,330 +1,1587 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Gudang Spalva</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gudang Spalva</title>
+  <meta name="description" content="Gudang Spalva — dashboard stok, finder SKU, matrix stok, barang masuk & keluar." />
 
-<style>
-body{font-family:Arial;margin:20px;background:#fff}
-.nav button{padding:10px;margin:5px;background:#000;color:#fff;border:none;border-radius:8px}
-.card{border:1px solid #ddd;padding:20px;border-radius:12px;margin-top:20px}
-select,input{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc}
-.btn{width:100%;padding:14px;background:#000;color:#fff;border:none;border-radius:10px}
-.result{border:1px solid #ddd;padding:20px;border-radius:12px;margin-top:15px}
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
 
-.dashboard-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:15px;
-  font-size:14px;
-  background:#fff;
-  border-radius:12px;
-  overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,0.05);
-}
+  <style>
+    :root {
+      --bg0: #ffffff;
+      --bg1: #f9fafb;
+      --panel: rgba(0, 0, 0, 0.04);
+      --panel2: rgba(0, 0, 0, 0.06);
+      --stroke: rgba(0, 0, 0, 0.1);
+      --stroke2: rgba(0, 0, 0, 0.14);
+      --text: #1f2937;
+      --muted: rgba(31, 41, 55, 0.6);
+      --muted2: rgba(31, 41, 55, 0.4);
+      --accent: #2563eb;
+      --accent2: #3b82f6;
+      --danger: #ef4444;
+      --warn: #fbbf24;
 
-.dashboard-table thead{
-  background:#000;
-  color:#fff;
-}
+      --r12: 12px;
+      --r16: 16px;
+      --r20: 20px;
 
-.dashboard-table th{
-  padding:12px;
-  text-align:left;
-}
+      --shadow: 0 18px 55px rgba(0, 0, 0, 0.1);
+      --shadow2: 0 10px 30px rgba(0, 0, 0, 0.08);
 
-.dashboard-table td{
-  padding:10px;
-  border-bottom:1px solid #eee;
-}
+      --max: 1100px;
+      --pad: clamp(16px, 2.8vw, 28px);
+    }
 
-.dashboard-table tr:nth-child(even){
-  background:#f9f9f9;
-}
+    * {
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      height: 100%;
+    }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial,
+        "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x: hidden;
+    }
 
-.dashboard-table tr:hover{
-  background:#f1f5ff;
-}
+    /* Subtle grid texture */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(900px 550px at 50% 0%, rgba(0, 0, 0, 0.1), transparent 70%);
+      opacity: 0.15;
+    }
 
-.status-masuk{
-  color:#16a34a;
-  font-weight:bold;
-}
+    a {
+      color: inherit;
+    }
 
-.status-keluar{
-  color:#dc2626;
-  font-weight:bold;
-}
+    .wrap {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: var(--pad);
+      position: relative;
+      z-index: 1;
+    }
 
-/* mobile */
-@media(max-width:600px){
-  .dashboard-table th,
-  .dashboard-table td{
-    font-size:12px;
-    padding:8px;
-  }
-}
+    header {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: clamp(14px, 2vw, 22px);
+      align-items: stretch;
+      margin-top: 10px;
+    }
 
-</style>
+    .brand {
+      border-radius: var(--r20);
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.01));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow2);
+      padding: clamp(16px, 2.2vw, 22px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand::after {
+      content: "";
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      right: -260px;
+      top: -290px;
+      background: radial-gradient(
+        circle at 30% 30%,
+        rgba(37, 99, 235, 0.18),
+        rgba(59, 130, 246, 0.08),
+        transparent 65%
+      );
+      filter: blur(0px);
+      transform: rotate(18deg);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .brandTop {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mark {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 14px 30px rgba(37, 99, 235, 0.3);
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      flex: 0 0 auto;
+    }
+    .logo svg {
+      width: 24px;
+      height: 24px;
+      opacity: 0.95;
+      fill: white;
+    }
+
+    .title {
+      min-width: 0;
+    }
+    .title h1 {
+      margin: 0;
+      font-family: Space Grotesk, Inter, sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: clamp(18px, 2.25vw, 24px);
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .title p {
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.35;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 10px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.1);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      color: var(--muted);
+      font-size: 12.5px;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.35);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .dot.live {
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+    }
+    .dot.err {
+      background: var(--danger);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+    }
+
+    .actions {
+      border-radius: var(--r20);
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.01));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow2);
+      padding: clamp(14px, 2vw, 18px);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .actions::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: radial-gradient(
+          700px 220px at 20% 0%,
+          rgba(37, 99, 235, 0.18),
+          transparent 60%
+        ),
+        radial-gradient(700px 220px at 80% 0%, rgba(37, 99, 235, 0.12), transparent 60%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab {
+      appearance: none;
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--accent2);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-weight: 600;
+      font-size: 13.5px;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease,
+        box-shadow 0.16s ease;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab:hover {
+      transform: translateY(-1px);
+      background: rgba(37, 99, 235, 0.15);
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.25);
+    }
+    .tab:active {
+      transform: translateY(0px) scale(0.99);
+    }
+    .tab[aria-current="page"] {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: var(--accent2);
+      box-shadow: 0 16px 30px rgba(37, 99, 235, 0.38);
+      color: white;
+    }
+
+    .shortcut {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(37, 99, 235, 0.2);
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    main {
+      margin-top: clamp(16px, 3vw, 26px);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .panel {
+      border-radius: var(--r20);
+      background: var(--bg0);
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panelHead {
+      padding: clamp(16px, 2.4vw, 22px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 14px;
+    }
+
+    .panelHead h2 {
+      margin: 0;
+      font-family: Space Grotesk, Inter, sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: clamp(18px, 2.3vw, 22px);
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .panelHead p {
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      font-size: 13.5px;
+      max-width: 70ch;
+    }
+
+    .panelBody {
+      padding: clamp(16px, 2.4vw, 22px);
+    }
+
+    .formGrid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field {
+      grid-column: span 12;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .field label {
+      font-size: 12.5px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      background: var(--bg1);
+      color: var(--text);
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+    select:focus,
+    input[type="number"]:focus {
+      border-color: var(--accent2);
+      background: #e0e7ff;
+    }
+    input::placeholder {
+      color: rgba(31, 41, 55, 0.4);
+    }
+
+    .btnRow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 18px 40px rgba(37, 99, 235, 0.32);
+      transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.06) contrast(1.02);
+      box-shadow: 0 22px 50px rgba(37, 99, 235, 0.38);
+    }
+    .btn:active {
+      transform: translateY(0px) scale(0.99);
+    }
+
+    .btn.secondary {
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+      box-shadow: none;
+    }
+    .btn.secondary:hover {
+      background: rgba(37, 99, 235, 0.15);
+    }
+
+    .hint {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px dashed rgba(37, 99, 235, 0.2);
+      padding-top: 12px;
+    }
+
+    .result {
+      margin-top: 14px;
+      border-radius: var(--r16);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: var(--bg1);
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+      color: var(--text);
+    }
+    .kv {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+    .kv strong {
+      color: var(--text);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .tableWrap {
+      margin-top: 14px;
+      border-radius: var(--r16);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      background: var(--bg1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      color: var(--text);
+    }
+    th,
+    td {
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-family: Space Grotesk, Inter, sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: rgba(31, 41, 55, 0.7);
+      background: rgba(0, 0, 0, 0.03);
+    }
+    tr:hover td {
+      background: rgba(0, 0, 0, 0.02);
+    }
+    td.mono {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1, "ss01" 1;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    }
+
+    .empty {
+      padding: 18px;
+      color: var(--muted);
+      font-size: 13.5px;
+    }
+
+    footer {
+      margin: 18px 0 10px;
+      color: var(--muted2);
+      font-size: 12.5px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* Toast */
+    .toasts {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      display: grid;
+      gap: 10px;
+      z-index: 99999;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      width: min(420px, calc(100vw - 28px));
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: var(--bg0);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.1);
+      padding: 12px 12px 12px 12px;
+      display: grid;
+      grid-template-columns: 14px 1fr auto;
+      gap: 10px;
+      align-items: start;
+      animation: toastIn 0.28s ease both;
+    }
+    @keyframes toastIn {
+      from {
+        transform: translateY(-8px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    .toast .bar {
+      width: 10px;
+      height: 100%;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.3);
+      margin-top: 2px;
+    }
+    .toast .tTitle {
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.01em;
+      margin: 0;
+      font-family: Space Grotesk, Inter, sans-serif;
+      color: var(--text);
+    }
+    .toast .tMsg {
+      margin: 4px 0 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .toast button {
+      appearance: none;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .toast button:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .toast.info .bar {
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.7), rgba(59, 130, 246, 0.4));
+    }
+    .toast.success .bar {
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.7), rgba(59, 130, 246, 0.4));
+    }
+    .toast.warn .bar {
+      background: linear-gradient(180deg, rgba(251, 191, 36, 0.7), rgba(251, 191, 36, 0.4));
+    }
+    .toast.error .bar {
+      background: linear-gradient(180deg, rgba(239, 68, 68, 0.7), rgba(239, 68, 68, 0.4));
+    }
+
+    /* Loading overlay */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99990;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+    .overlay[aria-hidden="false"] {
+      display: flex;
+    }
+
+    .loader {
+      width: min(520px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: var(--bg0);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 3px solid rgba(0, 0, 0, 0.1);
+      border-top-color: var(--accent2);
+      animation: spin 0.9s linear infinite;
+      flex: 0 0 auto;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    .loader .lText {
+      min-width: 0;
+    }
+    .loader .lText .big {
+      margin: 0;
+      font-family: Space Grotesk, Inter, sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .loader .lText .small {
+      margin: 4px 0 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    /* Reveal */
+    .reveal {
+      animation: rise 0.45s ease both;
+    }
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 980px) {
+      header {
+        grid-template-columns: 1fr;
+      }
+      .meta {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .tab {
+        flex: 1 1 auto;
+        justify-content: center;
+      }
+      .panelHead {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      th,
+      td {
+        padding: 11px 10px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="wrap">
+    <header>
+      <section class="brand" aria-label="Identitas aplikasi">
+        <div class="brandTop">
+          <div class="mark">
+            <div class="logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"
+                  stroke="rgba(6,16,26,.92)"
+                  stroke-width="1.6"
+                />
+                <path d="M12 3v18" stroke="rgba(6,16,26,.62)" stroke-width="1.6" />
+                <path d="M4 7.5 12 12l8-4.5" stroke="rgba(6,16,26,.62)" stroke-width="1.6" />
+              </svg>
+            </div>
+            <div class="title">
+              <h1>Gudang Spalva</h1>
+              <p>Dashboard stok, Finder SKU, Matrix stok per ukuran, serta pencatatan Barang Masuk & Keluar.</p>
+            </div>
+          </div>
+          <div class="meta" aria-label="Status aplikasi">
+            <div class="pill" title="Koneksi ke API">
+              <span class="dot" id="apiDot" aria-hidden="true"></span>
+              <span id="apiStatus">Siap</span>
+            </div>
+            <div class="pill" title="Mode data">
+              <span class="dot live" aria-hidden="true"></span>
+              <span id="cacheStatus">Cache: Off</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-<h1>📦 GUDANG SPALVA</h1>
+      <aside class="actions" aria-label="Navigasi">
+        <nav class="nav" id="nav">
+          <button class="tab" data-view="dashboard" aria-current="page" type="button">Dashboard</button>
+          <button class="tab" data-view="finder" type="button">Finder</button>
+          <button class="tab" data-view="matrix" type="button">Matrix</button>
+          <button class="tab" data-view="masuk" type="button">Barang Masuk</button>
+          <button class="tab" data-view="keluar" type="button">Barang Keluar</button>
+        </nav>
 
-<div class="nav">
-<button onclick="dashboard()">Dashboard</button>
-<button onclick="finder()">Finder</button>
-<button onclick="matrix()">Matrix</button>
-<button onclick="formMasuk()">Barang Masuk</button>
-<button onclick="formKeluar()">Barang Keluar</button>
-</div>
+        <div class="shortcut">
+          <span>Tips: tekan <strong style="color:var(--text)">R</strong> untuk refresh data view.</span>
+          <button class="tab" id="btnRefresh" type="button" title="Refresh data view">Refresh</button>
+        </div>
+      </aside>
+    </header>
 
-<div id="app"></div>
+    <main>
+      <section class="panel" aria-live="polite">
+        <div id="app"></div>
+      </section>
+    </main>
 
-<script>
-
-const API = "https://script.google.com/macros/s/AKfycbz3qUpT8soJu2NGAXwny71nn-goU3i-eE87gLEeykeqlf88SH7M0lfVMzaDSI9Vw286HA/exec";
-
-// ================= DASHBOARD =================
-function dashboard(){
- fetch(API+"?action=dashboard")
- .then(r=>r.json())
- .then(data=>{
-
-  let html=`
-  <div class='card'>
-    <h2>Dashboard</h2>
-
-    <table class="dashboard-table">
-      <thead>
-        <tr>
-          <th>Waktu</th>
-          <th>SKU</th>
-          <th>Qty</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  data.reverse().forEach(d=>{
-    let statusClass = d.status==="MASUK" ? "status-masuk" : "status-keluar";
-
-    html+=`
-      <tr>
-        <td>${formatTanggal(d.waktu)}</td>
-        <td>${d.sku}</td>
-        <td>${d.jumlah}</td>
-        <td class="${statusClass}">${d.status}</td>
-      </tr>
-    `;
-  });
-
-  html+=`
-      </tbody>
-    </table>
+    <footer>
+      <span>© <span id="year"></span> Gudang Spalva</span>
+      <span>UI modular + validasi + loading + notifikasi</span>
+    </footer>
   </div>
-  `;
 
-  app.innerHTML=html;
+  <!-- Toast stack -->
+  <div class="toasts" id="toasts" aria-live="polite" aria-relevant="additions removals"></div>
 
- });
-}
-//===untuk di TABLE DASHBOARD===//
-function formatTanggal(iso){
-  let d=new Date(iso);
-  return d.toLocaleString("id-ID",{
-    day:"2-digit",
-    month:"short",
-    hour:"2-digit",
-    minute:"2-digit"
-  });
-}
+  <!-- Loading overlay -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="loader" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="lText">
+        <p class="big" id="loadingTitle">Memuat…</p>
+        <p class="small" id="loadingMsg">Mohon tunggu sebentar.</p>
+      </div>
+    </div>
+  </div>
 
-// ================= FINDER =================
-function finder(){
- fetch(API+"?action=finder")
- .then(r=>r.json())
- .then(data=>{
-  window.data=data;
+  <script>
+    // =========================
+    // CONFIG
+    // =========================
+    const API =
+      "https://script.google.com/macros/s/AKfycbz3qUpT8soJu2NGAXwny71nn-goU3i-eE87gLEeykeqlf88SH7M0lfVMzaDSI9Vw286HA/exec";
 
-  let kategori=[...new Set(data.map(d=>d.kategori))];
+    // =========================
+    // DOM HELPERS
+    // =========================
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const app = $("#app");
+    const nav = $("#nav");
 
-  app.innerHTML=`
-  <div class="card">
-  <h2>FINDER</h2>
+    // =========================
+    // UI: Toast + Loading
+    // =========================
+    const UI = (() => {
+      const toasts = $("#toasts");
+      const overlay = $("#overlay");
+      const apiDot = $("#apiDot");
+      const apiStatus = $("#apiStatus");
 
-  <select id="k" onchange="pLoad()">${kategori.map(x=>`<option>${x}</option>`).join("")}</select>
-  <select id="p" onchange="wLoad()"></select>
-  <select id="w" onchange="sLoad()"></select>
-  <select id="s"></select>
+      let loadingCount = 0;
 
-  <button class="btn" onclick="cari()">CARI</button>
-  <div id="hasil"></div>
-  </div>`;
+      function setApi(ok, text) {
+        apiDot.classList.toggle("live", !!ok);
+        apiDot.classList.toggle("err", !ok);
+        apiStatus.textContent = text || (ok ? "API: OK" : "API: Error");
+      }
 
-  pLoad();
- });
-}
+      function showLoading(title = "Memuat…", msg = "Mohon tunggu sebentar.") {
+        loadingCount++;
+        $("#loadingTitle").textContent = title;
+        $("#loadingMsg").textContent = msg;
+        overlay.setAttribute("aria-hidden", "false");
+      }
 
-function pLoad(){
- let p=[...new Set(data.filter(d=>d.kategori==k.value).map(d=>d.produk))];
- document.getElementById("p").innerHTML=p.map(x=>`<option>${x}</option>`).join("");
- wLoad();
-}
+      function hideLoading() {
+        loadingCount = Math.max(0, loadingCount - 1);
+        if (loadingCount === 0) overlay.setAttribute("aria-hidden", "true");
+      }
 
-function wLoad(){
- let w=[...new Set(data.filter(d=>d.kategori==k.value && d.produk==p.value).map(d=>d.warna))];
- document.getElementById("w").innerHTML=w.map(x=>`<option>${x}</option>`).join("");
- sLoad();
-}
+      function toast({ type = "info", title = "Info", message = "", timeout = 3200 }) {
+        const el = document.createElement("div");
+        el.className = `toast ${type}`;
+        el.innerHTML = `
+          <div class="bar" aria-hidden="true"></div>
+          <div>
+            <p class="tTitle">${escapeHTML(title)}</p>
+            <p class="tMsg">${escapeHTML(message)}</p>
+          </div>
+          <div style="display:flex; justify-content:flex-end;">
+            <button type="button" aria-label="Tutup notifikasi">Tutup</button>
+          </div>
+        `;
+        const btn = $("button", el);
+        btn.addEventListener("click", () => el.remove());
+        toasts.appendChild(el);
 
-function sLoad(){
- let s=[...new Set(data.filter(d=>d.kategori==k.value && d.produk==p.value && d.warna==w.value).map(d=>d.size))];
- document.getElementById("s").innerHTML=s.map(x=>`<option>${x}</option>`).join("");
-}
+        if (timeout) {
+          setTimeout(() => {
+            if (!el.isConnected) return;
+            el.style.opacity = "0";
+            el.style.transform = "translateY(-6px)";
+            el.style.transition = "opacity .22s ease, transform .22s ease";
+            setTimeout(() => el.remove(), 240);
+          }, timeout);
+        }
+      }
 
-function cari(){
- let d=data.find(x=>x.kategori==k.value && x.produk==p.value && x.warna==w.value && x.size==s.value);
+      function escapeHTML(str) {
+        return String(str).replace(/[&<>"']/g, (s) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        }[s]));
+      }
 
- hasil.innerHTML=`
- <div class="result">
- SKU: ${d.sku}<br>
- Lokasi: ${d.lokasi}<br>
- Stok: ${d.stok}
- </div>`;
-}
+      return { toast, showLoading, hideLoading, setApi, escapeHTML };
+    })();
 
-// ================= MATRIX =================
-function matrix(){
- fetch(API+"?action=finder")
- .then(r=>r.json())
- .then(data=>{
-  window.mdata=data;
+    // =========================
+    // API + Cache layer
+    // =========================
+    const Store = (() => {
+      const TTL = 60 * 1000; // 60s
+      const cache = new Map(); // key -> {ts, data}
 
-  let kategori=[...new Set(data.map(d=>d.kategori))];
+      function setCacheStatus(on) {
+        $("#cacheStatus").textContent = `Cache: ${on ? "On" : "Off"}`;
+      }
 
-  app.innerHTML=`
-  <div class="card">
-  <h2>MATRIX</h2>
+      async function getJSON(
+        url,
+        { cacheKey = null, ttl = TTL, loadingTitle = "Memuat…", loadingMsg = "Mengambil data dari server…" } = {}
+      ) {
+        const now = Date.now();
+        if (cacheKey && cache.has(cacheKey)) {
+          const entry = cache.get(cacheKey);
+          const fresh = now - entry.ts < ttl;
+          if (fresh) {
+            setCacheStatus(true);
+            return entry.data;
+          }
+        }
+        setCacheStatus(false);
 
-  <select id="mk" onchange="mpLoad()">${kategori.map(x=>`<option>${x}</option>`).join("")}</select>
-  <select id="mp" onchange="mwLoad()"></select>
-  <select id="mw"></select>
+        UI.showLoading(loadingTitle, loadingMsg);
+        try {
+          const res = await fetch(url, { method: "GET" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          if (cacheKey) cache.set(cacheKey, { ts: now, data });
+          UI.setApi(true, "API: OK");
+          return data;
+        } catch (err) {
+          UI.setApi(false, "API: Error");
+          UI.toast({ type: "error", title: "Gagal memuat", message: err.message || "Terjadi kesalahan jaringan." });
+          throw err;
+        } finally {
+          UI.hideLoading();
+        }
+      }
 
-  <button class="btn" onclick="loadMatrix()">LOAD</button>
-  <div id="mhasil"></div>
-  </div>`;
+      function invalidate(key) {
+        if (key) cache.delete(key);
+        else cache.clear();
+        setCacheStatus(false);
+      }
 
-  mpLoad();
- });
-}
+      return { getJSON, invalidate };
+    })();
 
-function mpLoad(){
- let p=[...new Set(mdata.filter(d=>d.kategori==mk.value).map(d=>d.produk))];
- mp.innerHTML=p.map(x=>`<option>${x}</option>`).join("");
- mwLoad();
-}
+    // =========================
+    // Rendering helpers
+    // =========================
+    function panelTemplate({ title, desc, rightHTML = "", bodyHTML = "" }) {
+      return `
+        <div class="panelHead">
+          <div>
+            <h2>${UI.escapeHTML(title)}</h2>
+            <p>${UI.escapeHTML(desc)}</p>
+          </div>
+          ${rightHTML ? `<div>${rightHTML}</div>` : ``}
+        </div>
+        <div class="panelBody reveal">
+          ${bodyHTML}
+        </div>
+      `;
+    }
 
-function mwLoad(){
- let w=[...new Set(mdata.filter(d=>d.kategori==mk.value && d.produk==mp.value).map(d=>d.warna))];
- mw.innerHTML=w.map(x=>`<option>${x}</option>`).join("");
-}
+    function optionList(arr) {
+      return arr.map((x) => `<option value="${UI.escapeHTML(x)}">${UI.escapeHTML(x)}</option>`).join("");
+    }
 
-function loadMatrix(){
- let data=mdata.filter(d=>d.kategori==mk.value && d.produk==mp.value && d.warna==mw.value);
+    function uniq(arr) {
+      return [...new Set(arr.filter((v) => v !== undefined && v !== null && String(v).trim() !== ""))];
+    }
 
- let html="<table><tr><th>UKURAN</th><th>STOK</th></tr>";
- data.forEach(d=>{
-  html+=`<tr><td>${d.size}</td><td>${d.stok}</td></tr>`;
- });
- html+="</table>";
- mhasil.innerHTML=html;
-}
+    function formatNow() {
+      return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(new Date());
+    }
 
-// ================= MASUK =================
-function formMasuk(){
- fetch(API+"?action=finder")
- .then(r=>r.json())
- .then(data=>{
-  window.f=data;
+    // =========================
+    // App Views (Modular)
+    // =========================
 
-  let kategori=[...new Set(data.map(d=>d.kategori))];
+    function formatWaktuKeWIB(utcString) {
+      if (!utcString) return "";
+      const date = new Date(utcString);
+      const options = {
+        timeZone: "Asia/Jakarta",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      };
+      return new Intl.DateTimeFormat("id-ID", options).format(date);
+    }
 
-  app.innerHTML=`
-  <div class="card">
-  <h2>BARANG MASUK</h2>
+    const Views = (() => {
+      async function dashboard() {
+        const data = await Store.getJSON(`${API}?action=dashboard`, {
+          cacheKey: "dashboard",
+          loadingTitle: "Memuat Dashboard",
+          loadingMsg: "Mengambil histori transaksi terbaru…",
+        });
 
-  <select id="ik" onchange="i1()">${kategori.map(x=>`<option>${x}</option>`).join("")}</select>
-  <select id="ip" onchange="i2()"></select>
-  <select id="iw" onchange="i3()"></select>
-  <select id="is" onchange="i4()"></select>
+        const right = `<span class="pill"><span class="dot live" aria-hidden="true"></span>${UI.escapeHTML(
+          formatNow()
+        )}</span>`;
 
-  <div id="isku"></div>
-  <input id="ij" type="number" placeholder="Jumlah">
+        const rows =
+        (data || [])
+          .map(
+            (d) => `
+            <tr>
+              <td class="mono">${formatWaktuKeWIB(d.waktu)}</td>
+              <td class="mono">${UI.escapeHTML(d.sku ?? "")}</td>
+              <td class="mono">${UI.escapeHTML(d.jumlah ?? "")}</td>
+              <td>${UI.escapeHTML(d.status ?? "")}</td>
+            </tr>
+          `
+          )
+          .join("") || `<tr><td colspan="4"><div class="empty">Belum ada data.</div></td></tr>`;
 
-  <button class="btn" onclick="saveMasuk()">Simpan</button>
-  </div>`;
+        const table = `
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr><th>Waktu</th><th>SKU</th><th>Jumlah</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
 
-  i1();
- });
-}
+        app.innerHTML = panelTemplate({
+          title: "Dashboard",
+          desc: "Ringkasan transaksi masuk/keluar terbaru dari sistem.",
+          rightHTML: right,
+          bodyHTML: table,
+        });
+      }
 
-function i1(){ ip.innerHTML=[...new Set(f.filter(d=>d.kategori==ik.value).map(d=>d.produk))].map(x=>`<option>${x}</option>`).join(""); i2();}
-function i2(){ iw.innerHTML=[...new Set(f.filter(d=>d.kategori==ik.value && d.produk==ip.value).map(d=>d.warna))].map(x=>`<option>${x}</option>`).join(""); i3();}
-function i3(){ is.innerHTML=[...new Set(f.filter(d=>d.kategori==ik.value && d.produk==ip.value && d.warna==iw.value).map(d=>d.size))].map(x=>`<option>${x}</option>`).join(""); i4();}
-function i4(){ let d=f.find(x=>x.kategori==ik.value && x.produk==ip.value && x.warna==iw.value && x.size==is.value); isku.innerHTML="SKU: "+d.sku; isku.dataset.sku=d.sku;}
+      async function finder() {
+        const data = await Store.getJSON(`${API}?action=finder`, {
+          cacheKey: "finder",
+          loadingTitle: "Memuat Finder",
+          loadingMsg: "Mengambil master data kategori/produk/warna/size…",
+        });
 
-function saveMasuk(){
- fetch(API+`?action=masuk&sku=${isku.dataset.sku}&jumlah=${ij.value}`)
- .then(r=>r.json())
- .then(d=>alert(d.status?"Berhasil":"Gagal"));
-}
+        const kategori = uniq(data.map((d) => d.kategori)).sort((a, b) => String(a).localeCompare(String(b)));
 
-// ================= KELUAR =================
-function formKeluar(){
- fetch(API+"?action=finder")
- .then(r=>r.json())
- .then(data=>{
-  window.f=data;
+        app.innerHTML = panelTemplate({
+          title: "Finder",
+          desc: "Cari SKU, lokasi, dan stok berdasarkan kategori → produk → warna → ukuran.",
+          rightHTML: `<span class="pill"><span class="dot live" aria-hidden="true"></span>Master: ${UI.escapeHTML(
+            String(data.length)
+          )} item</span>`,
+          bodyHTML: `
+            <div class="formGrid" id="finderForm">
+              <div class="field" style="grid-column: span 6;">
+                <label for="k">Kategori</label>
+                <select id="k">${optionList(kategori)}</select>
+              </div>
+              <div class="field" style="grid-column: span 6;">
+                <label for="p">Produk</label>
+                <select id="p"></select>
+              </div>
+              <div class="field" style="grid-column: span 6;">
+                <label for="w">Warna</label>
+                <select id="w"></select>
+              </div>
+              <div class="field" style="grid-column: span 6;">
+                <label for="s">Ukuran</label>
+                <select id="s"></select>
+              </div>
 
-  let kategori=[...new Set(data.map(d=>d.kategori))];
+              <div class="btnRow" style="grid-column: span 12;">
+                <button class="btn" id="btnCari" type="button">
+                  <span aria-hidden="true">⌕</span> CARI
+                </button>
+                <button class="btn secondary" id="btnCopy" type="button" disabled>
+                  Copy SKU
+                </button>
+              </div>
 
-  app.innerHTML=`
-  <div class="card">
-  <h2>BARANG KELUAR</h2>
+              <div style="grid-column: span 12;">
+                <div id="hasil"></div>
+              </div>
+            </div>
+            <div class="hint">
+              <span>Gunakan Finder untuk memastikan lokasi & stok sebelum transaksi.</span>
+              <span class="pill"><span class="dot live" aria-hidden="true"></span>Validasi input otomatis</span>
+            </div>
+          `,
+        });
 
-  <select id="ok" onchange="o1()">${kategori.map(x=>`<option>${x}</option>`).join("")}</select>
-  <select id="op" onchange="o2()"></select>
-  <select id="ow" onchange="o3()"></select>
-  <select id="os" onchange="o4()"></select>
+        // local state for this view
+        const state = { data };
 
-  <div id="osku"></div>
-  <input id="oj" type="number" placeholder="Jumlah">
+        const k = $("#k"),
+          p = $("#p"),
+          w = $("#w"),
+          s = $("#s");
+        const hasil = $("#hasil");
+        const btnCari = $("#btnCari");
+        const btnCopy = $("#btnCopy");
 
-  <button class="btn" onclick="saveKeluar()">Simpan</button>
-  </div>`;
+        function loadP() {
+          const items = state.data.filter(d => d.kategori == k.value);
+          const list = uniq(items.map(d => d.produk)).sort((a, b) => String(a).localeCompare(String(b)));
+          p.innerHTML = optionList(list);
+          loadW();
+        }
 
-  o1();
- });
-}
+        function loadW() {
+          const items = state.data.filter(d => d.kategori == k.value && d.produk == p.value);
+          const list = uniq(items.map(d => d.warna)).sort((a, b) => String(a).localeCompare(String(b)));
+          w.innerHTML = optionList(list);
+          loadS();
+        }
 
-function o1(){ op.innerHTML=[...new Set(f.filter(d=>d.kategori==ok.value).map(d=>d.produk))].map(x=>`<option>${x}</option>`).join(""); o2();}
-function o2(){ ow.innerHTML=[...new Set(f.filter(d=>d.kategori==ok.value && d.produk==op.value).map(d=>d.warna))].map(x=>`<option>${x}</option>`).join(""); o3();}
-function o3(){ os.innerHTML=[...new Set(f.filter(d=>d.kategori==ok.value && d.produk==op.value && d.warna==ow.value).map(d=>d.size))].map(x=>`<option>${x}</option>`).join(""); o4();}
-function o4(){ let d=f.find(x=>x.kategori==ok.value && x.produk==op.value && x.warna==ow.value && x.size==os.value); osku.innerHTML="SKU: "+d.sku+" | Stok: "+d.stok; osku.dataset.sku=d.sku;}
+        function loadS() {
+        const items = state.data.filter(d => d.kategori == k.value && d.produk == p.value && d.warna == w.value);
 
-function saveKeluar(){
- fetch(API+`?action=keluar&sku=${osku.dataset.sku}&jumlah=${oj.value}`)
- .then(r=>r.json())
- .then(d=>alert(d.status?"Berhasil":"Stok tidak cukup"));
-}
+        // Ambil ukuran unik sesuai urutan kemunculan di data (tanpa sort)
+        const seen = new Set();
+        const list = [];
+        for (const item of items) {
+          if (!seen.has(item.size)) {
+          seen.add(item.size);
+          list.push(item.size);
+          }
+        }
 
-// INIT
-dashboard();
+        s.innerHTML = optionList(list);
+        }
 
-</script>
+        function findOne() {
+          return state.data.find((x) => x.kategori == k.value && x.produk == p.value && x.warna == w.value && x.size == s.value);
+        }
 
+        function renderResult(d) {
+          if (!d) {
+            btnCopy.disabled = true;
+            hasil.innerHTML = `<div class="result">
+              <div class="kv"><span>Hasil</span><strong>Tidak ditemukan</strong></div>
+              <div class="kv"><span>Catatan</span><strong>Coba kombinasi lain</strong></div>
+            </div>`;
+            return;
+          }
+          btnCopy.disabled = false;
+          btnCopy.dataset.sku = d.sku ?? "";
+          hasil.innerHTML = `
+            <div class="result">
+              <div class="kv"><span>SKU</span><strong class="mono">${UI.escapeHTML(d.sku ?? "")}</strong></div>
+              <div class="kv"><span>Lokasi</span><strong>${UI.escapeHTML(d.lokasi ?? "-")}</strong></div>
+              <div class="kv"><span>Stok</span><strong class="mono">${UI.escapeHTML(d.stok ?? "0")}</strong></div>
+            </div>
+          `;
+        }
+
+        // wire up
+        k.addEventListener("change", loadP);
+        p.addEventListener("change", loadW);
+        w.addEventListener("change", loadS);
+
+        btnCari.addEventListener("click", () => {
+          const d = findOne();
+          renderResult(d);
+          if (d) UI.toast({ type: "success", title: "Ditemukan", message: `SKU ${d.sku} — stok ${d.stok}`, timeout: 2200 });
+          else UI.toast({ type: "warn", title: "Tidak ada hasil", message: "Data dengan kombinasi itu tidak ditemukan.", timeout: 2600 });
+        });
+
+        btnCopy.addEventListener("click", async () => {
+          const sku = btnCopy.dataset.sku;
+          if (!sku) return;
+          try {
+            await navigator.clipboard.writeText(sku);
+            UI.toast({ type: "info", title: "Disalin", message: `SKU ${sku} tersalin ke clipboard.`, timeout: 2000 });
+          } catch {
+            UI.toast({ type: "warn", title: "Tidak bisa copy", message: "Browser tidak mengizinkan clipboard. Copy manual ya.", timeout: 2600 });
+          }
+        });
+
+        // init
+        loadP();
+      }
+
+      async function matrix() {
+        const mdata = await Store.getJSON(`${API}?action=finder`, {
+          cacheKey: "finder", // share cache
+          loadingTitle: "Memuat Matrix",
+          loadingMsg: "Mengambil master data untuk matrix stok…",
+        });
+
+        const kategori = uniq(mdata.map((d) => d.kategori)).sort((a, b) => String(a).localeCompare(String(b)));
+
+        app.innerHTML = panelTemplate({
+          title: "Matrix",
+          desc: "Tampilkan stok per ukuran untuk kombinasi kategori + produk + warna.",
+          rightHTML: `<span class="pill"><span class="dot live" aria-hidden="true"></span>Render tabel dinamis</span>`,
+          bodyHTML: `
+            <div class="formGrid" id="matrixForm">
+              <div class="field" style="grid-column: span 4;">
+                <label for="mk">Kategori</label>
+                <select id="mk">${optionList(kategori)}</select>
+              </div>
+              <div class="field" style="grid-column: span 4;">
+                <label for="mp">Produk</label>
+                <select id="mp"></select>
+              </div>
+              <div class="field" style="grid-column: span 4;">
+                <label for="mw">Warna</label>
+                <select id="mw"></select>
+              </div>
+
+              <div class="btnRow" style="grid-column: span 12;">
+                <button class="btn" id="btnLoad" type="button"><span aria-hidden="true">▦</span> LOAD</button>
+                <button class="btn secondary" id="btnExport" type="button" disabled>Copy Tabel (TSV)</button>
+              </div>
+
+              <div style="grid-column: span 12;">
+                <div id="mhasil"></div>
+              </div>
+            </div>
+          `,
+        });
+
+        const mk = $("#mk"),
+          mp = $("#mp"),
+          mw = $("#mw");
+        const mhasil = $("#mhasil");
+        const btnLoad = $("#btnLoad");
+        const btnExport = $("#btnExport");
+
+        function mpLoad() {
+          const list = uniq(mdata.filter((d) => d.kategori == mk.value).map((d) => d.produk)).sort((a, b) =>
+            String(a).localeCompare(String(b))
+          );
+          mp.innerHTML = optionList(list);
+          mwLoad();
+        }
+        function mwLoad() {
+          const list = uniq(mdata.filter((d) => d.kategori == mk.value && d.produk == mp.value).map((d) => d.warna)).sort(
+            (a, b) => String(a).localeCompare(String(b))
+          );
+          mw.innerHTML = optionList(list);
+        }
+
+        function buildMatrixRows() {
+    const filtered = mdata.filter((d) => d.kategori == mk.value && d.produk == mp.value && d.warna == mw.value);
+
+    const seenSizes = new Set();
+    const orderedSizes = [];
+    for (const item of filtered) {
+      if (!seenSizes.has(item.size)) {
+        seenSizes.add(item.size);
+        orderedSizes.push(item.size);
+      }
+    }
+
+    const rows = orderedSizes.map((size) => {
+      const entry = filtered.find((d) => d.size === size);
+      return {
+        size,
+        stok: entry ? entry.stok : 0,
+      };
+    });
+
+    return rows;
+  }
+
+        function render(rows) {
+          if (!rows.length) {
+            btnExport.disabled = true;
+            mhasil.innerHTML = `<div class="empty">Tidak ada data untuk kombinasi tersebut.</div>`;
+            return;
+          }
+          btnExport.disabled = false;
+
+          const html = `
+            <div class="tableWrap">
+              <table>
+                <thead><tr><th>Ukuran</th><th>Stok</th></tr></thead>
+                <tbody>
+                  ${rows
+                    .map(
+                      (r) => `
+                    <tr>
+                      <td class="mono">${UI.escapeHTML(r.size)}</td>
+                      <td class="mono">${UI.escapeHTML(r.stok)}</td>
+                    </tr>
+                  `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+          `;
+          mhasil.innerHTML = html;
+        }
+
+        mk.addEventListener("change", mpLoad);
+        mp.addEventListener("change", mwLoad);
+
+        btnLoad.addEventListener("click", () => {
+          const rows = buildMatrixRows();
+          render(rows);
+          UI.toast({ type: "info", title: "Matrix dimuat", message: `${rows.length} baris ditampilkan.`, timeout: 2200 });
+          btnExport.dataset.tsv = ["UKURAN\tSTOK", ...rows.map((r) => `${r.size}\t${r.stok}`)].join("\n");
+        });
+
+        btnExport.addEventListener("click", async () => {
+          const tsv = btnExport.dataset.tsv || "";
+          if (!tsv) return;
+          try {
+            await navigator.clipboard.writeText(tsv);
+            UI.toast({ type: "success", title: "Disalin", message: "Tabel (TSV) tersalin. Bisa paste ke Excel/Sheets.", timeout: 2400 });
+          } catch {
+            UI.toast({ type: "warn", title: "Gagal copy", message: "Clipboard tidak tersedia. Copy manual dari tabel.", timeout: 2600 });
+          }
+        });
+
+        mpLoad();
+      }
+
+      async function transaksi(mode) {
+        // mode: 'masuk' | 'keluar'
+        const f = await Store.getJSON(`${API}?action=finder`, {
+          cacheKey: "finder",
+          loadingTitle: mode === "masuk" ? "Form Barang Masuk" : "Form Barang Keluar",
+          loadingMsg: "Mengambil master data untuk validasi SKU…",
+        });
+
+        const title = mode === "masuk" ? "Barang Masuk" : "Barang Keluar";
+        const desc =
+          mode === "masuk"
+            ? "Tambahkan stok berdasarkan SKU yang dipilih."
+            : "Kurangi stok. Sistem akan menolak bila stok tidak cukup.";
+
+        const kategori = uniq(f.map((d) => d.kategori)).sort((a, b) => String(a).localeCompare(String(b)));
+
+        app.innerHTML = panelTemplate({
+          title,
+          desc,
+          rightHTML: `<span class="pill"><span class="dot live" aria-hidden="true"></span>Transaksi aman + validasi</span>`,
+          bodyHTML: `
+            <div class="formGrid" id="trxForm">
+              <div class="field" style="grid-column: span 6;">
+                <label for="tk">Kategori</label>
+                <select id="tk">${optionList(kategori)}</select>
+              </div>
+              <div class="field" style="grid-column: span 6;">
+                <label for="tp">Produk</label>
+                <select id="tp"></select>
+              </div>
+              <div class="field" style="grid-column: span 6;">
+                <label for="tw">Warna</label>
+                <select id="tw"></select>
+              </div>
+              <div class="field" style="grid-column: span 6;">
+                <label for="ts">Ukuran</label>
+                <select id="ts"></select>
+              </div>
+
+              <div class="field" style="grid-column: span 12;">
+                <label>SKU & Stok</label>
+                <div class="result" id="skuBox" style="margin-top:0"></div>
+              </div>
+
+              <div class="field" style="grid-column: span 12;">
+                <label for="tj">Jumlah</label>
+                <input id="tj" type="number" inputmode="numeric" min="1" step="1" placeholder="Masukkan jumlah (contoh: 5)" />
+              </div>
+
+              <div class="btnRow" style="grid-column: span 12;">
+                <button class="btn" id="btnSave" type="button"><span aria-hidden="true">✓</span> Simpan</button>
+                <button class="btn secondary" id="btnReset" type="button">Reset</button>
+              </div>
+            </div>
+
+            <div class="hint">
+              <span>Catatan: jumlah harus bilangan bulat positif.</span>
+              <span class="pill"><span class="dot live" aria-hidden="true"></span>Auto-update SKU</span>
+            </div>
+          `,
+        });
+
+        const tk = $("#tk"),
+          tp = $("#tp"),
+          tw = $("#tw"),
+          ts = $("#ts");
+        const skuBox = $("#skuBox");
+        const tj = $("#tj");
+        const btnSave = $("#btnSave");
+        const btnReset = $("#btnReset");
+
+        function tpLoad() {
+          const list = uniq(f.filter((d) => d.kategori == tk.value).map((d) => d.produk)).sort((a, b) =>
+            String(a).localeCompare(String(b))
+          );
+          tp.innerHTML = optionList(list);
+          twLoad();
+        }
+        function twLoad() {
+          const list = uniq(f.filter((d) => d.kategori == tk.value && d.produk == tp.value).map((d) => d.warna)).sort((a, b) =>
+            String(a).localeCompare(String(b))
+          );
+          tw.innerHTML = optionList(list);
+          tsLoad();
+        }
+        function tsLoad() {
+          const list = uniq(f.filter((d) => d.kategori == tk.value && d.produk == tp.value && d.warna == tw.value).map((d) => d.size)).sort(
+            (a, b) => String(a).localeCompare(String(b), "id", { numeric: true })
+          );
+          ts.innerHTML = optionList(list);
+          skuLoad();
+        }
+        function skuLoad() {
+          const d = f.find((x) => x.kategori == tk.value && x.produk == tp.value && x.warna == tw.value && x.size == ts.value);
+          if (!d) {
+            skuBox.innerHTML = `
+              <div class="kv"><span>SKU</span><strong>-</strong></div>
+              <div class="kv"><span>Stok</span><strong class="mono">-</strong></div>
+              <div class="kv"><span>Lokasi</span><strong>-</strong></div>
+            `;
+            skuBox.dataset.sku = "";
+            skuBox.dataset.stok = "";
+            return;
+          }
+          skuBox.dataset.sku = d.sku ?? "";
+          skuBox.dataset.stok = d.stok ?? "";
+          skuBox.innerHTML = `
+            <div class="kv"><span>SKU</span><strong class="mono">${UI.escapeHTML(d.sku ?? "")}</strong></div>
+            <div class="kv"><span>Stok</span><strong class="mono">${UI.escapeHTML(d.stok ?? "0")}</strong></div>
+            <div class="kv"><span>Lokasi</span><strong>${UI.escapeHTML(d.lokasi ?? "-")}</strong></div>
+          `;
+        }
+
+        function validate() {
+          const sku = skuBox.dataset.sku;
+          const jumlah = Number(tj.value);
+
+          if (!sku) {
+            UI.toast({ type: "warn", title: "SKU belum valid", message: "Pilih kombinasi kategori/produk/warna/ukuran yang tersedia.", timeout: 2800 });
+            return { ok: false };
+          }
+          if (!Number.isFinite(jumlah) || jumlah <= 0) {
+            UI.toast({ type: "warn", title: "Jumlah tidak valid", message: "Jumlah harus angka positif.", timeout: 2600 });
+            tj.focus();
+            return { ok: false };
+          }
+          // integer enforcement
+          if (!Number.isInteger(jumlah)) {
+            UI.toast({ type: "warn", title: "Jumlah harus bulat", message: "Contoh: 1, 2, 3…", timeout: 2600 });
+            tj.focus();
+            return { ok: false };
+          }
+
+          if (mode === "keluar") {
+            const stok = Number(skuBox.dataset.stok);
+            if (Number.isFinite(stok) && jumlah > stok) {
+              UI.toast({ type: "error", title: "Stok tidak cukup", message: `Stok tersedia ${stok}, Anda input ${jumlah}.`, timeout: 3200 });
+              tj.focus();
+              return { ok: false };
+            }
+          }
+
+          return { ok: true, sku, jumlah };
+        }
+
+        async function save() {
+          const v = validate();
+          if (!v.ok) return;
+
+          const action = mode === "masuk" ? "masuk" : "keluar";
+          const url = `${API}?action=${encodeURIComponent(action)}&sku=${encodeURIComponent(v.sku)}&jumlah=${encodeURIComponent(v.jumlah)}`;
+
+          UI.showLoading("Menyimpan…", `Memproses transaksi ${title.toLowerCase()} untuk SKU ${v.sku}…`);
+          try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+
+            if (json && json.status) {
+              UI.toast({ type: "success", title: "Berhasil", message: `Transaksi ${title.toLowerCase()} tersimpan.`, timeout: 2600 });
+              // invalidate dashboard (biar update) + finder (stok berubah)
+              Store.invalidate("dashboard");
+              Store.invalidate("finder");
+              // reload master for updated stok display
+              UI.toast({ type: "info", title: "Update data", message: "Memuat ulang master data untuk stok terbaru…", timeout: 1800 });
+              await transaksi(mode); // rerender view
+            } else {
+              UI.toast({ type: "error", title: "Gagal", message: mode === "keluar" ? "Stok tidak cukup atau transaksi ditolak." : "Transaksi ditolak oleh server.", timeout: 3200 });
+            }
+          } catch (err) {
+            UI.toast({ type: "error", title: "Error", message: err.message || "Gagal menyimpan transaksi.", timeout: 3200 });
+          } finally {
+            UI.hideLoading();
+          }
+        }
+
+        tk.addEventListener("change", tpLoad);
+        tp.addEventListener("change", twLoad);
+        tw.addEventListener("change", tsLoad);
+        ts.addEventListener("change", skuLoad);
+
+        btnSave.addEventListener("click", save);
+        btnReset.addEventListener("click", () => {
+          tj.value = "";
+          tpLoad();
+          UI.toast({ type: "info", title: "Reset", message: "Form dikembalikan ke default.", timeout: 1800 });
+        });
+
+        // UX: enter to submit
+        tj.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") save();
+        });
+
+        tpLoad();
+      }
+
+      return {
+        dashboard,
+        finder,
+        matrix,
+        masuk: () => transaksi("masuk"),
+        keluar: () => transaksi("keluar"),
+      };
+    })();
+
+    // =========================
+    // Router + Nav state
+    // =========================
+    const Router = (() => {
+      let current = "dashboard";
+
+      function setActive(view) {
+        $$(".tab[data-view]").forEach((b) => b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false"));
+      }
+
+      async function go(view) {
+        if (!Views[view]) return;
+        setActive(view);
+        try {
+          await Views[view]();
+        } catch {
+          // already toasted
+          app.innerHTML = panelTemplate({
+            title: "Terjadi kesalahan",
+            desc: "Coba refresh atau periksa koneksi internet.",
+            bodyHTML: `<div class="empty">View <strong>${UI.escapeHTML(view)}</strong> gagal dimuat.</div>`,
+          });
+        }
+      }
+
+      function refresh() {
+        // invalidate view-related caches
+        if (current === "dashboard") Store.invalidate("dashboard");
+        if (["finder", "matrix", "masuk", "keluar"].includes(current)) Store.invalidate("finder");
+        UI.toast({ type: "info", title: "Refresh", message: `Memuat ulang view "${current}".`, timeout: 1800 });
+        go(current);
+      }
+
+      function getCurrent() {
+        return current;
+      }
+
+      return { go, refresh, getCurrent };
+    })();
+
+    // =========================
+    // Events
+    // =========================
+    nav.addEventListener("click", (e) => {
+      const btn = e.target.closest(".tab[data-view]");
+      if (!btn) return;
+      Router.go(btn.dataset.view);
+    });
+
+    $("#btnRefresh").addEventListener("click", () => Router.refresh());
+
+    // Keyboard shortcut: R to refresh (avoid typing in inputs)
+    window.addEventListener("keydown", (e) => {
+      const tag = document.activeElement && document.activeElement.tagName ? document.activeElement.tagName.toLowerCase() : "";
+      const typing = tag === "input" || tag === "select" || tag === "textarea";
+      if (typing) return;
+      if (e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        Router.refresh();
+      }
+    });
+
+    // =========================
+    // Init
+    // =========================
+    $("#year").textContent = new Date().getFullYear();
+
+    // quick API ping (optional, lightweight)
+    (async () => {
+      UI.setApi(true, "API: cek…");
+      try {
+        await Store.getJSON(`${API}?action=dashboard`, { cacheKey: "dashboard", ttl: 15 * 1000, loadingTitle: "Inisialisasi", loadingMsg: "Menghubungkan ke server…" });
+        UI.toast({ type: "success", title: "Siap", message: "Aplikasi siap digunakan.", timeout: 1800 });
+      } catch {
+        // toast already shown
+      } finally {
+        Router.go("dashboard");
+      }
+    })();
+  </script>
 </body>
 </html>
